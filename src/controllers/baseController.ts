@@ -11,11 +11,7 @@ export abstract class BaseController {
     try {
       await handler();
     } catch (error) {
-      if (error instanceof AppError) {
-        this.error(res, error.statusCode, error.message);
-      } else {
-        this.error(res, 500, error instanceof Error ? error.message : 'Internal server error');
-      }
+      throw error;
     }
   } 
 
@@ -36,12 +32,6 @@ export abstract class BaseController {
   protected noContent(res: Response, message: string | null = null): void {
     res.status(204).json({
       message
-    });
-  }
-
-  protected error(res: Response, statusCode: number, message: string | null = null): void {
-    res.status(statusCode).json({
-      message: message || 'Internal server error'
     });
   }
 } 
