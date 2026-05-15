@@ -4,6 +4,8 @@ import 'dotenv/config';
 import { SQLDatabase } from './database/index.js';
 import { userRoute } from './routes/userRoute.js';
 import { Logger } from './plugins/logger.js';
+import { metricsMiddleware, register, verifyMetricsToken } from './config/metrics.js';
+import { apiRateLimiter } from './middlewares/rateLimiter.js';
 
 const app = express();
 const port = 3000;
@@ -11,10 +13,27 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(Logger.getHttpLogger());
+app.use(metricsMiddleware);
 
 app.use('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
+
+app.use('/ready', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    await SQLDatabase.getInstance().$queryRaw`SELECT 1`;
+    res.status(200).json({ status: 'ready' });
+  } catch (error) {
+    res.status(503).json({ status: 'not_ready' });
+  }
+});
+
+app.get('/metrics', verifyMetricsToken, async (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', register.contentType);
+  res.send(await register.metrics());
+});
+
+app.use(apiRateLimiter);
 
 app.use('/v1/users', userRoute);
 
