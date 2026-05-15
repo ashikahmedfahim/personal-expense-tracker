@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "personal-expense-tracker-api"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["app:3000"]
+    authorization:
+      type: Bearer
+      credentials: "change-this-to-a-long-random-secret"
