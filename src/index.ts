@@ -1,5 +1,4 @@
 import express, { type NextFunction, type Request, type Response } from 'express';
-import bodyParser from 'body-parser';
 import 'dotenv/config';
 import { SQLDatabase } from './database/index.js';
 import { userRoute } from './routes/userRoute.js';
@@ -11,7 +10,6 @@ import { AppError } from './utils/errors.js';
 const app = express();
 const port = 3000;
 app.use(express.json());
-app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(Logger.getHttpLogger());
 app.use(metricsMiddleware);

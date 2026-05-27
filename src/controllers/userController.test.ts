@@ -78,7 +78,7 @@ describe('UserController', () => {
 
     it('forwards service errors to next', async () => {
       const req = { body: createInput } as Request;
-      const error = new AppError(400, 'User with this email already exists');
+      const error = new AppError(409, 'User with this email already exists');
 
       vi.mocked(userValidator.validateCreateUser).mockReturnValue(createInput);
       vi.mocked(userService.create).mockRejectedValue(error);
