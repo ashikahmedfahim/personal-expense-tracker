@@ -6,6 +6,7 @@ import { userRoute } from './routes/userRoute.js';
 import { Logger } from './plugins/logger.js';
 import { metricsMiddleware, register, verifyMetricsToken } from './config/metrics.js';
 import { apiRateLimiter } from './middlewares/rateLimiter.js';
+import { AppError } from './utils/errors.js';
 
 const app = express();
 const port = 3000;
@@ -37,13 +38,18 @@ app.use(apiRateLimiter);
 
 app.use('/v1/users', userRoute);
 
-app.use((err: Error | { statusCode?: number; message?: string }, _req: Request, res: Response, _next: NextFunction) => {
-  const { statusCode = 500, message = 'Internal Server Error' } = err as { statusCode?: number; message?: string };
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  const statusCode = err instanceof AppError ? err.statusCode : 500;
+  const message = err instanceof AppError
+    ? err.message
+    : err instanceof Error
+      ? err.message
+      : 'Internal Server Error';
   const logMessage = `Request: ${_req.method} ${_req.url}, Error: ${message}`;
   if (statusCode >= 500) {
     Logger.error(logMessage, err);
   } else {
-    Logger.warn(logMessage, err);
+    Logger.warn(logMessage, err instanceof Error ? { error: err } : undefined);
   }
   res.status(statusCode).json({ message });
 });
