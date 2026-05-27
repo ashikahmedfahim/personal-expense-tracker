@@ -20,12 +20,15 @@ model User {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  categories Category[]
 }
 
 model Category {
   id        Int      @id @default(autoincrement())
   name      String
   flowType  FlowType
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
