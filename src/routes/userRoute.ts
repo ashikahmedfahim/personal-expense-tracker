@@ -1,4 +1,5 @@
 import express from 'express';
+import { SQLDatabase } from '../database/index.js';
 import { UserController } from '../controllers/userController.js';
 import { loginRateLimiter } from '../middlewares/rateLimiter.js';
 import { UserRepository } from '../repositories/userRepository.js';
@@ -7,7 +8,7 @@ import { UserValidator } from '../validators/userValidator.js';
 
 const router = express.Router();
 
-const userRepository = new UserRepository();
+const userRepository = new UserRepository(SQLDatabase.getInstance());
 const userService = new UserService(userRepository);
 const userValidator = new UserValidator();
 const userController = new UserController(userService, userValidator);
