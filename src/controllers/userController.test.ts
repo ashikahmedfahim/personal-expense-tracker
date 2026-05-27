@@ -70,7 +70,7 @@ describe('UserController', () => {
       expect(userService.create).toHaveBeenCalledWith(createInput);
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({
-        message: null,
+        message: 'User created successfully',
         data: userResponse,
       });
       expect(next).not.toHaveBeenCalled();

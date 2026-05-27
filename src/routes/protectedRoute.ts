@@ -1,11 +1,11 @@
 import express from 'express';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
+import { categoryRoute } from './categoryRoute.js';
 
 const router = express.Router();
 
 router.use(authMiddleware.authenticate.bind(authMiddleware));
 
-// Mount authenticated domain routers here, e.g.:
-// router.use('/flow-types', flowTypeRoute);
+router.use('/categories', categoryRoute);
 
 export { router as protectedRoute };

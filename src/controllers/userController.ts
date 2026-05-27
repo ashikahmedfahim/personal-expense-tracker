@@ -18,7 +18,7 @@ export class UserController extends BaseController implements IUserController {
     await this.handleRequest(async () => {
       const value: IUserCreateInput = this.userValidator.validateCreateUser(req.body);
       const user: IUserResponse = await this.userService.create(value);
-      this.created(res, user);
+      this.created(res, user, 'User created successfully');
     }, next);
   }
 
