@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import type { Request, RequestHandler, Response } from 'express';
 import pino, { type Logger as PinoLogger, type LoggerOptions } from 'pino';
-import pinoHttp from 'pino-http';
+import { pinoHttp, type Options } from 'pino-http';
 
 export class Logger {
   private static logger: PinoLogger;
@@ -39,8 +39,7 @@ export class Logger {
     }
 
     if (!Logger.httpMiddleware) {
-      // @ts-ignore
-      Logger.httpMiddleware = pinoHttp({
+      const options: Options<Request, Response> = {
         logger: Logger.getInstance(),
 
         genReqId: (req: Request) => {
@@ -53,8 +52,8 @@ export class Logger {
           return randomUUID();
         },
 
-        customLogLevel: (_req: Request, res: Response, err: Error | object) => {
-          if (err || res.statusCode >= 500) {
+        customLogLevel: (_req: Request, res: Response, error?: Error) => {
+          if (error || res.statusCode >= 500) {
             return 'error';
           }
 
@@ -65,14 +64,16 @@ export class Logger {
           return 'info';
         },
 
-        customSuccessMessage: (req: Request, res: Response) => {
+        customSuccessMessage: (req: Request, res: Response, _responseTime: number) => {
           return `${req.method} ${req.url} completed with status ${res.statusCode}`;
         },
 
-        customErrorMessage: (req: Request, res: Response) => {
+        customErrorMessage: (req: Request, res: Response, _error: Error) => {
           return `${req.method} ${req.url} failed with status ${res.statusCode}`;
         },
-      }) as unknown as RequestHandler;
+      };
+
+      Logger.httpMiddleware = pinoHttp(options);
     }
 
     return Logger.httpMiddleware;
