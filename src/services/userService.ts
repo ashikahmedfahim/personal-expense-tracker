@@ -1,14 +1,15 @@
-import { AppError } from "../controllers/baseController.js";
-import type { IUser, IUserInput } from "../interfaces/User.js";
-import { UserRepository } from "../repositories/userRepository.js";
-import { Bcrypt } from "../utils/Bcrypt.js";
-import { JWT } from "../utils/JWT.js";
+import { AppError } from '../controllers/baseController.js';
+import type { IUser, IUserCreateInput, IUserLoginInput } from '../interfaces/User.js';
+import type { IUserRepository } from '../interfaces/repositories/IUserRepository.js';
+import type { IUserService } from '../interfaces/services/IUserService.js';
+import { Bcrypt } from '../utils/Bcrypt.js';
+import { JWT } from '../utils/JWT.js';
 
-export class UserService {
-  
-  constructor(private readonly userRepository: UserRepository) { }
+export class UserService implements IUserService {
 
-  async create(user: IUserInput): Promise<IUser> {
+  constructor(private readonly userRepository: IUserRepository) { }
+
+  async create(user: IUserCreateInput): Promise<IUser> {
     const existingUser = await this.userRepository.findByEmail(user.email);
     if (existingUser) {
       throw new AppError(400, 'User with this email already exists');
@@ -18,7 +19,7 @@ export class UserService {
     return response;
   }
 
-  async login(user: IUserInput): Promise<string> {
+  async login(user: IUserLoginInput): Promise<string> {
     const existingUser = await this.userRepository.findByEmail(user.email);
     if (!existingUser) {
       throw new AppError(400, 'Invalid credentials');

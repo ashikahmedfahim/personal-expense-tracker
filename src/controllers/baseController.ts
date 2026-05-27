@@ -1,4 +1,6 @@
 import type { Response } from 'express';
+import type { IApiMessageResponse, IApiResponse } from '../interfaces/api.js';
+import type { IBaseController } from '../interfaces/controllers/IBaseController.js';
 
 export class AppError extends Error {
   constructor(public statusCode: number, message: string) {
@@ -6,32 +8,35 @@ export class AppError extends Error {
   }
 }
 
-export abstract class BaseController {
-  protected async handleRequest<T>(handler: () => Promise<T>, res: Response): Promise<void> {
+export abstract class BaseController implements IBaseController {
+  async handleRequest<T>(handler: () => Promise<T>, res: Response): Promise<void> {
     try {
       await handler();
     } catch (error) {
       throw error;
     }
-  } 
+  }
 
-  protected ok<T>(res: Response, data: T, message: string | null = null): void {
-    res.status(200).json({
+  ok<T>(res: Response, data: T, message: string | null = null): void {
+    const body: IApiResponse<T> = {
       message,
-      data
-    });
+      data,
+    };
+    res.status(200).json(body);
   }
 
-  protected created<T>(res: Response, data: T, message: string | null = null): void {
-    res.status(201).json({
+  created<T>(res: Response, data: T, message: string | null = null): void {
+    const body: IApiResponse<T> = {
       message,
-      data
-    });
+      data,
+    };
+    res.status(201).json(body);
   }
 
-  protected noContent(res: Response, message: string | null = null): void {
-    res.status(204).json({
-      message
-    });
+  noContent(res: Response, message: string | null = null): void {
+    const body: IApiMessageResponse = {
+      message,
+    };
+    res.status(204).json(body);
   }
-} 
+}

@@ -1,26 +1,27 @@
 import Joi from 'joi';
-import type { IUserInput } from '../interfaces/User.js';
+import type { IUserCreateInput, IUserLoginInput } from '../interfaces/User.js';
+import type { IUserValidator } from '../interfaces/validators/IUserValidator.js';
 import { BaseValidator } from './baseValidator.js';
 
-export class UserValidator extends BaseValidator {
+export class UserValidator extends BaseValidator implements IUserValidator {
 
-  private static readonly createUserSchema = Joi.object({
+  private readonly createUserSchema = Joi.object({
     firstName: Joi.string().min(3).max(20).required(),
     lastName: Joi.string().min(3).max(20).required(),
     email: Joi.string().email().min(3).required(),
     password: Joi.string().min(8).max(20).required(),
   });
 
-  private static readonly loginUserSchema = Joi.object({
+  private readonly loginUserSchema = Joi.object({
     email: Joi.string().email().min(3).required(),
     password: Joi.string().min(8).max(20).required(),
   });
 
-  static validateCreateUser(user: IUserInput): IUserInput {
-    return this.validate(this.createUserSchema, user);
+  validateCreateUser(user: unknown): IUserCreateInput {
+    return this.validate<IUserCreateInput>(this.createUserSchema, user);
   }
 
-  static validateLoginUser(user: IUserInput): IUserInput {
-    return this.validate(this.loginUserSchema, user);
+  validateLoginUser(user: unknown): IUserLoginInput {
+    return this.validate<IUserLoginInput>(this.loginUserSchema, user);
   }
 }
