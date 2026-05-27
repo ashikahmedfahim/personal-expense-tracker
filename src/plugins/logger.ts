@@ -12,7 +12,7 @@ export class Logger {
   public static getInstance(): PinoLogger {
     if (!Logger.logger) {
       const options: LoggerOptions = {
-        level: process.env.LOG_LEVEL || 'info',
+        level: process.env.NODE_ENV === 'test' ? 'silent' : (process.env.LOG_LEVEL || 'info'),
 
         base: {
           service: process.env.SERVICE_NAME || 'express-api',
@@ -34,6 +34,10 @@ export class Logger {
   }
 
   public static getHttpLogger(): RequestHandler {
+    if (process.env.NODE_ENV === 'test') {
+      return (_req, _res, next) => next();
+    }
+
     if (!Logger.httpMiddleware) {
       // @ts-ignore
       Logger.httpMiddleware = pinoHttp({
