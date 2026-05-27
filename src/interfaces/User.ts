@@ -26,6 +26,3 @@ export interface IUserLoginInput {
   email: string;
   password: string;
 }
-
-/** @deprecated Use IUserCreateInput */
-export type IUserInput = IUserCreateInput;
