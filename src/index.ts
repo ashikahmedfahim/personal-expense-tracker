@@ -11,7 +11,18 @@ app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
 
-process.on('SIGINT', async () => {
+let isShuttingDown = false;
+
+const shutdown = async () => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
   await SQLDatabase.getInstance().$disconnect();
   process.exit(0);
-});
+};
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, () => {
+    void shutdown();
+  });
+}
