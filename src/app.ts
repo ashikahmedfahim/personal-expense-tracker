@@ -28,7 +28,7 @@ export function createApp(): Express {
     }
   });
 
-  app.get('/metrics', verifyMetricsToken, async (_req: Request, res: Response) => {
+  app.get('/metrics', verifyMetricsToken, async (_req: Request, res: Response): Promise<void> => {
     res.setHeader('Content-Type', register.contentType);
     res.send(await register.metrics());
   });
@@ -37,14 +37,14 @@ export function createApp(): Express {
   app.use('/v1/users', userRoute);
   app.use('/v1', protectedRoute);
 
-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    const statusCode = err instanceof AppError ? err.statusCode : 500;
-    const message = err instanceof AppError
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction): void => {
+    const statusCode: number = err instanceof AppError ? err.statusCode : 500;
+    const message: string = err instanceof AppError
       ? err.message
       : err instanceof Error
         ? err.message
         : 'Internal Server Error';
-    const logMessage = `Request: ${_req.method} ${_req.url}, Error: ${message}`;
+    const logMessage: string = `Request: ${_req.method} ${_req.url}, Error: ${message}`;
     if (statusCode >= 500) {
       Logger.error(logMessage, err);
     } else {

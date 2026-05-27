@@ -4,7 +4,7 @@ const JWT_ALGORITHM = 'HS256' as const satisfies jwt.Algorithm;
 
 export class JWT {
   private static getSecret(): string {
-    const secret = process.env.JWT_SECRET;
+    const secret: string | undefined = process.env.JWT_SECRET;
     if (!secret) {
       throw new Error('JWT_SECRET is not set');
     }

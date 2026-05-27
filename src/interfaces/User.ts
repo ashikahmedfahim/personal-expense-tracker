@@ -11,7 +11,8 @@ export interface IUser {
 export type IUserResponse = Omit<IUser, 'password'>;
 
 export function toUserResponse(user: IUser): IUserResponse {
-  const { password: _, ...userResponse } = user;
+  const { password: _, ...rest } = user;
+  const userResponse: IUserResponse = rest;
   return userResponse;
 }
 
