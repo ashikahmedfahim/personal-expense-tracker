@@ -29,14 +29,14 @@ export function metricsMiddleware(
   res: Response,
   next: NextFunction
 ): void {
-  const start = process.hrtime.bigint();
+  const start: bigint = process.hrtime.bigint();
 
-  res.on("finish", () => {
-    const end = process.hrtime.bigint();
-    const durationInSeconds = Number(end - start) / 1_000_000_000;
+  res.on("finish", (): void => {
+    const end: bigint = process.hrtime.bigint();
+    const durationInSeconds: number = Number(end - start) / 1_000_000_000;
 
-    const route = req.route?.path || req.path || "unknown";
-    const labels = {
+    const route: string = req.route?.path || req.path || "unknown";
+    const labels: { method: string; route: string; status_code: string } = {
       method: req.method,
       route,
       status_code: String(res.statusCode),
@@ -54,9 +54,9 @@ export function verifyMetricsToken(
   res: Response,
   next: NextFunction
 ): void {
-  const authHeader = req.headers.authorization;
+  const authHeader: string | undefined = req.headers.authorization;
 
-  const expectedToken = process.env.METRICS_TOKEN;
+  const expectedToken: string | undefined = process.env.METRICS_TOKEN;
 
   if (!expectedToken) {
     res.status(500).json({
@@ -72,7 +72,7 @@ export function verifyMetricsToken(
     return;
   }
 
-  const token = authHeader.replace("Bearer ", "");
+  const token: string = authHeader.replace("Bearer ", "");
 
   if (token !== expectedToken) {
     res.status(403).json({

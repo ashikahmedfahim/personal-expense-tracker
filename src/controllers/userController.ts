@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import type { IUserCreateInput, IUserLoginInput, IUserResponse } from '../interfaces/User.js';
 import type { IUserController } from '../interfaces/controllers/IUserController.js';
 import type { IUserService } from '../interfaces/services/IUserService.js';
 import type { IUserValidator } from '../interfaces/validators/IUserValidator.js';
@@ -15,16 +16,16 @@ export class UserController extends BaseController implements IUserController {
 
   async createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
-      const value = this.userValidator.validateCreateUser(req.body);
-      const user = await this.userService.create(value);
+      const value: IUserCreateInput = this.userValidator.validateCreateUser(req.body);
+      const user: IUserResponse = await this.userService.create(value);
       this.created(res, user);
     }, next);
   }
 
   async loginUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
-      const value = this.userValidator.validateLoginUser(req.body);
-      const token = await this.userService.login(value);
+      const value: IUserLoginInput = this.userValidator.validateLoginUser(req.body);
+      const token: string = await this.userService.login(value);
       this.ok(res, token);
     }, next);
   }

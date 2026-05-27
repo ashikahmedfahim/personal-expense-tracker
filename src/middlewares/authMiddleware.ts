@@ -26,12 +26,12 @@ export class AuthMiddleware {
 
   authenticate(req: Request, _res: Response, next: NextFunction): void {
     try {
-      const token = this.extractBearerToken(req.headers.authorization);
+      const token: string | null = this.extractBearerToken(req.headers.authorization);
       if (!token) {
         throw new AppError(401, 'Authentication required');
       }
 
-      const decoded = JWT.verify(token);
+      const decoded: jwt.JwtPayload | string = JWT.verify(token);
       if (typeof decoded === 'string') {
         throw new AppError(401, 'Invalid token');
       }

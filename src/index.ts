@@ -13,7 +13,7 @@ app.listen(port, () => {
 
 let isShuttingDown = false;
 
-const shutdown = async () => {
+const shutdown = async (): Promise<void> => {
   if (isShuttingDown) return;
   isShuttingDown = true;
 
