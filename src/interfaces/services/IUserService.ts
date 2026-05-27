@@ -1,6 +1,6 @@
-import type { IUser, IUserCreateInput, IUserLoginInput } from '../User.js';
+import type { IUserCreateInput, IUserLoginInput, IUserResponse } from '../User.js';
 
 export interface IUserService {
-  create(user: IUserCreateInput): Promise<IUser>;
+  create(user: IUserCreateInput): Promise<IUserResponse>;
   login(user: IUserLoginInput): Promise<string>;
 }

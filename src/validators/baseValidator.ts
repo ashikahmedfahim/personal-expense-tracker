@@ -1,6 +1,6 @@
 import type Joi from 'joi';
 import type { Request } from 'express';
-import { AppError } from '../controllers/baseController.js';
+import { AppError } from '../utils/errors.js';
 import type { IBaseValidator } from '../interfaces/validators/IBaseValidator.js';
 
 export class BaseValidator implements IBaseValidator {

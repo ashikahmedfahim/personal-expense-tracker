@@ -8,6 +8,13 @@ export interface IUser {
   updatedAt: Date;
 }
 
+export type IUserResponse = Omit<IUser, 'password'>;
+
+export function toUserResponse(user: IUser): IUserResponse {
+  const { password: _, ...userResponse } = user;
+  return userResponse;
+}
+
 export interface IUserCreateInput {
   firstName: string;
   lastName: string;

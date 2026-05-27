@@ -10,8 +10,8 @@ export class JWT {
     return secret;
   }
 
-  static sign(payload: any): string {
-    return jwt.sign(payload, JWT.getSecret());
+  static sign(payload: jwt.JwtPayload, options?: jwt.SignOptions): string {
+    return jwt.sign(payload, JWT.getSecret(), options);
   }
 
   static verify(token: string): jwt.JwtPayload | string {

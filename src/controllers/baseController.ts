@@ -2,12 +2,6 @@ import type { Response } from 'express';
 import type { IApiMessageResponse, IApiResponse } from '../interfaces/api.js';
 import type { IBaseController } from '../interfaces/controllers/IBaseController.js';
 
-export class AppError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-  }
-}
-
 export abstract class BaseController implements IBaseController {
   async handleRequest<T>(handler: () => Promise<T>, res: Response): Promise<void> {
     try {
