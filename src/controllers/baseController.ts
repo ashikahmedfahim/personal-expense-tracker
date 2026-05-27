@@ -1,13 +1,13 @@
-import type { Response } from 'express';
+import type { NextFunction, Response } from 'express';
 import type { IApiMessageResponse, IApiResponse } from '../interfaces/api.js';
 import type { IBaseController } from '../interfaces/controllers/IBaseController.js';
 
 export abstract class BaseController implements IBaseController {
-  async handleRequest<T>(handler: () => Promise<T>, res: Response): Promise<void> {
+  async handleRequest<T>(handler: () => Promise<T>, next: NextFunction): Promise<void> {
     try {
       await handler();
     } catch (error) {
-      throw error;
+      next(error);
     }
   }
 
