@@ -51,8 +51,8 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  FlowType: 'FlowType',
-  User: 'User'
+  User: 'User',
+  Category: 'Category'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -71,14 +71,6 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const FlowTypeScalarFieldEnum = {
-  id: 'id',
-  title: 'title'
-} as const
-
-export type FlowTypeScalarFieldEnum = (typeof FlowTypeScalarFieldEnum)[keyof typeof FlowTypeScalarFieldEnum]
-
-
 export const UserScalarFieldEnum = {
   id: 'id',
   firstName: 'firstName',
@@ -90,6 +82,18 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const CategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  flowType: 'flowType',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CategoryScalarFieldEnum = (typeof CategoryScalarFieldEnum)[keyof typeof CategoryScalarFieldEnum]
 
 
 export const SortOrder = {

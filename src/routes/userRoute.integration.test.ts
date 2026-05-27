@@ -66,7 +66,7 @@ describe('POST /v1/users', () => {
 
     expect(response.status).toBe(201);
     expect(response.body).toEqual({
-      message: null,
+      message: 'User created successfully',
       data: {
         ...userResponse,
         createdAt: userResponse.createdAt.toISOString(),

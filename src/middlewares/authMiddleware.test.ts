@@ -56,7 +56,7 @@ describe('AuthMiddleware', () => {
     expect(JWT.verify).not.toHaveBeenCalled();
   });
 
-  it('attaches user and calls next when token is valid', () => {
+  it('attaches id and email and calls next when token is valid', () => {
     vi.mocked(JWT.verify).mockReturnValue({ id: 1, email: 'jane@example.com' });
     const { req, res, next } = createMocks('Bearer valid-token');
 
