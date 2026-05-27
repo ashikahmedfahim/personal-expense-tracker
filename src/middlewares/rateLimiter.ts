@@ -4,6 +4,11 @@ import { rateLimit } from "express-rate-limit";
 const apiWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000);
 const apiLimit = Number(process.env.RATE_LIMIT_MAX ?? 100);
 
+const registerWindowMs = Number(
+  process.env.REGISTER_RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000
+);
+const registerLimit = Number(process.env.REGISTER_RATE_LIMIT_MAX ?? 5);
+
 const loginWindowMs = Number(
   process.env.LOGIN_RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000
 );
@@ -20,6 +25,19 @@ export const apiRateLimiter = rateLimit({
   handler: (_req: Request, res: Response) => {
     res.status(429).json({
       message: "Too many requests. Please try again later.",
+    });
+  },
+});
+
+export const registerRateLimiter = rateLimit({
+  windowMs: registerWindowMs,
+  limit: registerLimit,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+
+  handler: (_req: Request, res: Response) => {
+    res.status(429).json({
+      message: "Too many registration attempts. Please try again later.",
     });
   },
 });
