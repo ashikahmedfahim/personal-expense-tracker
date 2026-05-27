@@ -21,3 +21,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  flowType  FlowType
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum FlowType {
+  INFLOW
+  OUTFLOW
+}
