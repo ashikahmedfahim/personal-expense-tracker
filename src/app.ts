@@ -1,4 +1,5 @@
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
+import { protectedRoute } from './routes/protectedRoute.js';
 import { userRoute } from './routes/userRoute.js';
 import { SQLDatabase } from './database/index.js';
 import { Logger } from './plugins/logger.js';
@@ -34,6 +35,7 @@ export function createApp(): Express {
 
   app.use(apiRateLimiter);
   app.use('/v1/users', userRoute);
+  app.use('/v1', protectedRoute);
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const statusCode = err instanceof AppError ? err.statusCode : 500;
