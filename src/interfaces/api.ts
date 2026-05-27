@@ -3,6 +3,7 @@ export interface IApiResponse<T> {
   data: T;
 }
 
-export interface IApiMessageResponse {
-  message: string | null;
+/** Standard error body used by the global handler, rate limiters, and AppError responses. */
+export interface IApiErrorResponse {
+  message: string;
 }

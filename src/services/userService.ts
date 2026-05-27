@@ -12,7 +12,7 @@ export class UserService implements IUserService {
   async create(user: IUserCreateInput) {
     const existingUser = await this.userRepository.findByEmail(user.email);
     if (existingUser) {
-      throw new AppError(400, 'User with this email already exists');
+      throw new AppError(409, 'User with this email already exists');
     }
     const hashedPassword = await Bcrypt.hash(user.password);
     const createdUser = await this.userRepository.create({ ...user, password: hashedPassword });

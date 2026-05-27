@@ -1,5 +1,5 @@
 import type { NextFunction, Response } from 'express';
-import type { IApiMessageResponse, IApiResponse } from '../interfaces/api.js';
+import type { IApiResponse } from '../interfaces/api.js';
 import type { IBaseController } from '../interfaces/controllers/IBaseController.js';
 
 export abstract class BaseController implements IBaseController {
@@ -25,12 +25,5 @@ export abstract class BaseController implements IBaseController {
       data,
     };
     res.status(201).json(body);
-  }
-
-  noContent(res: Response, message: string | null = null): void {
-    const body: IApiMessageResponse = {
-      message,
-    };
-    res.status(204).json(body);
   }
 }

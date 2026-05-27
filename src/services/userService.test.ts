@@ -65,7 +65,7 @@ describe('UserService', () => {
       vi.mocked(userRepository.findByEmail).mockResolvedValue(storedUser);
 
       await expect(userService.create(createInput)).rejects.toEqual(
-        new AppError(400, 'User with this email already exists'),
+        new AppError(409, 'User with this email already exists'),
       );
 
       expect(userRepository.findByEmail).toHaveBeenCalledWith(createInput.email);

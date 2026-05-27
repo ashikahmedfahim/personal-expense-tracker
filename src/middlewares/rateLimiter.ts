@@ -19,7 +19,6 @@ export const apiRateLimiter = rateLimit({
 
   handler: (_req: Request, res: Response) => {
     res.status(429).json({
-      success: false,
       message: "Too many requests. Please try again later.",
     });
   },
@@ -35,7 +34,6 @@ export const loginRateLimiter = rateLimit({
 
   handler: (_req: Request, res: Response) => {
     res.status(429).json({
-      success: false,
       message: "Too many login attempts. Please try again later.",
     });
   },
