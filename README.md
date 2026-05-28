@@ -255,18 +255,16 @@ On first start, Compose will:
 
 1. Start PostgreSQL and wait until it is healthy
 2. Build `Dockerfile.dev` (Node 22, `npm install`, `prisma generate`)
-3. Run the API with `npm run dev` (hot reload via mounted source)
+3. Run [`scripts/docker-dev-entrypoint.sh`](scripts/docker-dev-entrypoint.sh): `prisma migrate deploy`, then `npm run dev` (hot reload via mounted source)
 4. Start Prometheus, Grafana, and pgAdmin
 
-### 3. Apply database migrations
-
-Migrations are not run automatically. After the stack is up, in a **second terminal**:
+Migrations run automatically before the API starts. To apply migrations manually (e.g. after pulling new migration files without restarting):
 
 ```bash
 docker compose -f docker-compose.dev.yml exec app npx prisma migrate deploy
 ```
 
-### 4. Verify the API
+### 3. Verify the API
 
 ```bash
 curl http://localhost:3000/health
