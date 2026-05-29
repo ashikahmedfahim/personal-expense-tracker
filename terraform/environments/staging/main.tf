@@ -14,7 +14,7 @@ module "api" {
   jwt_secret          = var.jwt_secret
   metrics_token       = var.metrics_token
 
-  db_backup_retention_days = 3
+  db_backup_retention_days = 1 # AWS free tier max is 1 day
   ecs_desired_count        = var.ecs_desired_count
   ecs_min_capacity         = var.ecs_min_capacity
   ecs_max_capacity         = var.ecs_max_capacity
