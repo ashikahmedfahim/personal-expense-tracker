@@ -58,6 +58,7 @@ describe('TransactionService', () => {
       findByIdAndUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     };
 
     categoryRepository = {
@@ -133,6 +134,23 @@ describe('TransactionService', () => {
 
       expect(categoryRepository.findByIdAndUserId).toHaveBeenCalledWith(5, userId);
       expect(result).toEqual(updated);
+    });
+  });
+
+  describe('delete', () => {
+    it('throws when transaction is not found', async () => {
+      vi.mocked(transactionRepository.delete).mockResolvedValue(null);
+
+      await expect(transactionService.delete(userId, transaction.id)).rejects.toEqual(
+        new AppError(404, 'Transaction not found'),
+      );
+    });
+
+    it('deletes the transaction when it exists', async () => {
+      vi.mocked(transactionRepository.delete).mockResolvedValue(transaction);
+
+      await expect(transactionService.delete(userId, transaction.id)).resolves.toBeUndefined();
+      expect(transactionRepository.delete).toHaveBeenCalledWith(transaction.id, userId);
     });
   });
 });

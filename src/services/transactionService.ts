@@ -38,4 +38,11 @@ export class TransactionService implements ITransactionService {
     }
     return transaction;
   }
+
+  async delete(userId: number, id: number): Promise<void> {
+    const transaction: ITransaction | null = await this.transactionRepository.delete(id, userId);
+    if (!transaction) {
+      throw new AppError(404, 'Transaction not found');
+    }
+  }
 }

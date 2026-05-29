@@ -17,5 +17,6 @@ const transactionController = new TransactionController(transactionService, tran
 
 router.post('/', transactionController.createTransaction.bind(transactionController));
 router.patch('/:id', transactionController.updateTransaction.bind(transactionController));
+router.delete('/:id', transactionController.deleteTransaction.bind(transactionController));
 
 export { router as transactionRoute };

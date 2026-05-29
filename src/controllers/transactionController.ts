@@ -33,4 +33,12 @@ export class TransactionController extends BaseController implements ITransactio
       this.ok(res, transaction, 'Transaction updated successfully');
     }, next);
   }
+
+  async deleteTransaction(req: Request, res: Response, next: NextFunction): Promise<void> {
+    await this.handleRequest(async () => {
+      const id: number = this.transactionValidator.validateTransactionId(req.params);
+      await this.transactionService.delete(req.user!.id, id);
+      this.ok(res, null, 'Transaction deleted successfully');
+    }, next);
+  }
 }

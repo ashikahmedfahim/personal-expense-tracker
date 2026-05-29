@@ -40,4 +40,16 @@ export class TransactionRepository implements ITransactionRepository {
     });
     return response;
   }
+
+  async delete(id: number, userId: number): Promise<ITransaction | null> {
+    const existing: ITransaction | null = await this.findByIdAndUserId(id, userId);
+    if (!existing) {
+      return null;
+    }
+
+    const response: ITransaction = await this.db.transaction.delete({
+      where: { id },
+    });
+    return response;
+  }
 }
