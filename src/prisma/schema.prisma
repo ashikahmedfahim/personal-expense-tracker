@@ -28,6 +28,7 @@ model Category {
   id        Int      @id @default(autoincrement())
   name      String
   flowType  FlowType
+  order     Int 
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   transactions Transaction[]
