@@ -13,3 +13,7 @@ export interface IBudgetCreateInput {
   amount: number;
   date?: Date;
 }
+
+export interface IBudgetUpdateInput {
+  amount: number;
+}

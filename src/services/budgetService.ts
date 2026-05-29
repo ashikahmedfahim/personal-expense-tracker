@@ -1,5 +1,5 @@
 import { FlowType } from '../generated/prisma/enums.js';
-import type { IBudget, IBudgetCreateInput } from '../interfaces/Budget.js';
+import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput } from '../interfaces/Budget.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
 import type { IBudgetRepository } from '../interfaces/repositories/IBudgetRepository.js';
 import type { IBudgetService } from '../interfaces/services/IBudgetService.js';
@@ -41,6 +41,14 @@ export class BudgetService implements IBudgetService {
       { categoryId: data.categoryId, amount: data.amount },
       monthStart,
     );
+    return budget;
+  }
+
+  async update(userId: number, id: number, data: IBudgetUpdateInput): Promise<IBudget> {
+    const budget: IBudget | null = await this.budgetRepository.update(id, userId, data.amount);
+    if (!budget) {
+      throw new AppError(404, 'Budget not found');
+    }
     return budget;
   }
 }

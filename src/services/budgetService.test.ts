@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowType } from '../generated/prisma/enums.js';
 import type { ICategory } from '../interfaces/Category.js';
-import type { IBudget, IBudgetCreateInput } from '../interfaces/Budget.js';
+import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput } from '../interfaces/Budget.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
 import type { IBudgetRepository } from '../interfaces/repositories/IBudgetRepository.js';
 import { AppError } from '../utils/errors.js';
@@ -51,8 +51,10 @@ describe('BudgetService', () => {
     vi.clearAllMocks();
 
     budgetRepository = {
+      findByIdAndUserId: vi.fn(),
       findByCategoryIdAndUserIdInMonth: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     };
 
     categoryRepository = {
@@ -116,6 +118,28 @@ describe('BudgetService', () => {
         new Date('2024-06-01T00:00:00.000Z'),
       );
       expect(result).toEqual(budget);
+    });
+  });
+
+  describe('update', () => {
+    const updateInput: IBudgetUpdateInput = { amount: 750 };
+
+    it('throws when budget is not found', async () => {
+      vi.mocked(budgetRepository.update).mockResolvedValue(null);
+
+      await expect(budgetService.update(userId, budget.id, updateInput)).rejects.toEqual(
+        new AppError(404, 'Budget not found'),
+      );
+    });
+
+    it('updates the budget amount', async () => {
+      const updated: IBudget = { ...budget, amount: 750 };
+      vi.mocked(budgetRepository.update).mockResolvedValue(updated);
+
+      const result: IBudget = await budgetService.update(userId, budget.id, updateInput);
+
+      expect(budgetRepository.update).toHaveBeenCalledWith(budget.id, userId, 750);
+      expect(result).toEqual(updated);
     });
   });
 });

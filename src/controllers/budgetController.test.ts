@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextFunction, Request, Response } from 'express';
 import type { IRequestUser } from '../interfaces/auth.js';
-import type { IBudget, IBudgetCreateInput } from '../interfaces/Budget.js';
+import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput } from '../interfaces/Budget.js';
 import type { IBudgetService } from '../interfaces/services/IBudgetService.js';
 import type { IBudgetValidator } from '../interfaces/validators/IBudgetValidator.js';
 import { BudgetController } from './budgetController.js';
@@ -48,10 +48,13 @@ describe('BudgetController', () => {
   beforeEach(() => {
     budgetService = {
       create: vi.fn(),
+      update: vi.fn(),
     };
 
     budgetValidator = {
       validateCreateBudget: vi.fn(),
+      validateUpdateBudget: vi.fn(),
+      validateBudgetId: vi.fn(),
     };
 
     budgetController = new BudgetController(budgetService, budgetValidator);
@@ -72,6 +75,24 @@ describe('BudgetController', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Budget created successfully',
       data: budget,
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('updates a budget with a success message', async () => {
+    const input: IBudgetUpdateInput = { amount: 750 };
+    vi.mocked(budgetValidator.validateBudgetId).mockReturnValue(budget.id);
+    vi.mocked(budgetValidator.validateUpdateBudget).mockReturnValue(input);
+    vi.mocked(budgetService.update).mockResolvedValue({ ...budget, amount: 750 });
+    const req: Request = createRequest({ body: input, params: { id: '1' } });
+
+    await budgetController.updateBudget(req, res, next);
+
+    expect(budgetService.update).toHaveBeenCalledWith(authenticatedUser.id, budget.id, input);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Budget updated successfully',
+      data: { ...budget, amount: 750 },
     });
     expect(next).not.toHaveBeenCalled();
   });

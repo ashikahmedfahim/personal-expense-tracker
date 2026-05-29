@@ -16,5 +16,6 @@ const budgetValidator = new BudgetValidator();
 const budgetController = new BudgetController(budgetService, budgetValidator);
 
 router.post('/', budgetController.createBudget.bind(budgetController));
+router.patch('/:id', budgetController.updateBudget.bind(budgetController));
 
 export { router as budgetRoute };
