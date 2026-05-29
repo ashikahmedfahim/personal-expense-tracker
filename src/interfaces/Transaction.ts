@@ -48,6 +48,7 @@ export interface ICurrentMonthCategoryWithTransactions {
   id: number;
   name: string;
   flowType: FlowType;
+  order: number;
   transactions: ICurrentMonthTransaction[];
 }
 
@@ -57,5 +58,5 @@ export interface ITransactionsByCategory {
 
 export interface ITransactionWithCategory {
   transaction: ICurrentMonthTransaction;
-  category: Pick<ICurrentMonthCategoryWithTransactions, 'id' | 'name' | 'flowType'>;
+  category: Pick<ICurrentMonthCategoryWithTransactions, 'id' | 'name' | 'flowType' | 'order'>;
 }

@@ -28,11 +28,13 @@ export type AggregateCategory = {
 
 export type CategoryAvgAggregateOutputType = {
   id: number | null
+  order: number | null
   userId: number | null
 }
 
 export type CategorySumAggregateOutputType = {
   id: number | null
+  order: number | null
   userId: number | null
 }
 
@@ -40,6 +42,7 @@ export type CategoryMinAggregateOutputType = {
   id: number | null
   name: string | null
   flowType: $Enums.FlowType | null
+  order: number | null
   userId: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -49,6 +52,7 @@ export type CategoryMaxAggregateOutputType = {
   id: number | null
   name: string | null
   flowType: $Enums.FlowType | null
+  order: number | null
   userId: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -58,6 +62,7 @@ export type CategoryCountAggregateOutputType = {
   id: number
   name: number
   flowType: number
+  order: number
   userId: number
   createdAt: number
   updatedAt: number
@@ -67,11 +72,13 @@ export type CategoryCountAggregateOutputType = {
 
 export type CategoryAvgAggregateInputType = {
   id?: true
+  order?: true
   userId?: true
 }
 
 export type CategorySumAggregateInputType = {
   id?: true
+  order?: true
   userId?: true
 }
 
@@ -79,6 +86,7 @@ export type CategoryMinAggregateInputType = {
   id?: true
   name?: true
   flowType?: true
+  order?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -88,6 +96,7 @@ export type CategoryMaxAggregateInputType = {
   id?: true
   name?: true
   flowType?: true
+  order?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -97,6 +106,7 @@ export type CategoryCountAggregateInputType = {
   id?: true
   name?: true
   flowType?: true
+  order?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -193,6 +203,7 @@ export type CategoryGroupByOutputType = {
   id: number
   name: string
   flowType: $Enums.FlowType
+  order: number
   userId: number
   createdAt: Date
   updatedAt: Date
@@ -225,6 +236,7 @@ export type CategoryWhereInput = {
   id?: Prisma.IntFilter<"Category"> | number
   name?: Prisma.StringFilter<"Category"> | string
   flowType?: Prisma.EnumFlowTypeFilter<"Category"> | $Enums.FlowType
+  order?: Prisma.IntFilter<"Category"> | number
   userId?: Prisma.IntFilter<"Category"> | number
   createdAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Category"> | Date | string
@@ -236,6 +248,7 @@ export type CategoryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   flowType?: Prisma.SortOrder
+  order?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -250,6 +263,7 @@ export type CategoryWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CategoryWhereInput | Prisma.CategoryWhereInput[]
   name?: Prisma.StringFilter<"Category"> | string
   flowType?: Prisma.EnumFlowTypeFilter<"Category"> | $Enums.FlowType
+  order?: Prisma.IntFilter<"Category"> | number
   userId?: Prisma.IntFilter<"Category"> | number
   createdAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Category"> | Date | string
@@ -261,6 +275,7 @@ export type CategoryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   flowType?: Prisma.SortOrder
+  order?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -278,6 +293,7 @@ export type CategoryScalarWhereWithAggregatesInput = {
   id?: Prisma.IntWithAggregatesFilter<"Category"> | number
   name?: Prisma.StringWithAggregatesFilter<"Category"> | string
   flowType?: Prisma.EnumFlowTypeWithAggregatesFilter<"Category"> | $Enums.FlowType
+  order?: Prisma.IntWithAggregatesFilter<"Category"> | number
   userId?: Prisma.IntWithAggregatesFilter<"Category"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Category"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Category"> | Date | string
@@ -286,6 +302,7 @@ export type CategoryScalarWhereWithAggregatesInput = {
 export type CategoryCreateInput = {
   name: string
   flowType: $Enums.FlowType
+  order: number
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCategoriesInput
@@ -296,6 +313,7 @@ export type CategoryUncheckedCreateInput = {
   id?: number
   name: string
   flowType: $Enums.FlowType
+  order: number
   userId: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -305,6 +323,7 @@ export type CategoryUncheckedCreateInput = {
 export type CategoryUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCategoriesNestedInput
@@ -315,6 +334,7 @@ export type CategoryUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -325,6 +345,7 @@ export type CategoryCreateManyInput = {
   id?: number
   name: string
   flowType: $Enums.FlowType
+  order: number
   userId: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -333,6 +354,7 @@ export type CategoryCreateManyInput = {
 export type CategoryUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -341,6 +363,7 @@ export type CategoryUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -360,6 +383,7 @@ export type CategoryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   flowType?: Prisma.SortOrder
+  order?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -367,6 +391,7 @@ export type CategoryCountOrderByAggregateInput = {
 
 export type CategoryAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  order?: Prisma.SortOrder
   userId?: Prisma.SortOrder
 }
 
@@ -374,6 +399,7 @@ export type CategoryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   flowType?: Prisma.SortOrder
+  order?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -383,6 +409,7 @@ export type CategoryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   flowType?: Prisma.SortOrder
+  order?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -390,6 +417,7 @@ export type CategoryMinOrderByAggregateInput = {
 
 export type CategorySumOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  order?: Prisma.SortOrder
   userId?: Prisma.SortOrder
 }
 
@@ -461,6 +489,7 @@ export type CategoryUpdateOneRequiredWithoutTransactionsNestedInput = {
 export type CategoryCreateWithoutUserInput = {
   name: string
   flowType: $Enums.FlowType
+  order: number
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
@@ -470,6 +499,7 @@ export type CategoryUncheckedCreateWithoutUserInput = {
   id?: number
   name: string
   flowType: $Enums.FlowType
+  order: number
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
@@ -508,6 +538,7 @@ export type CategoryScalarWhereInput = {
   id?: Prisma.IntFilter<"Category"> | number
   name?: Prisma.StringFilter<"Category"> | string
   flowType?: Prisma.EnumFlowTypeFilter<"Category"> | $Enums.FlowType
+  order?: Prisma.IntFilter<"Category"> | number
   userId?: Prisma.IntFilter<"Category"> | number
   createdAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Category"> | Date | string
@@ -516,6 +547,7 @@ export type CategoryScalarWhereInput = {
 export type CategoryCreateWithoutTransactionsInput = {
   name: string
   flowType: $Enums.FlowType
+  order: number
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCategoriesInput
@@ -525,6 +557,7 @@ export type CategoryUncheckedCreateWithoutTransactionsInput = {
   id?: number
   name: string
   flowType: $Enums.FlowType
+  order: number
   userId: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -549,6 +582,7 @@ export type CategoryUpdateToOneWithWhereWithoutTransactionsInput = {
 export type CategoryUpdateWithoutTransactionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCategoriesNestedInput
@@ -558,6 +592,7 @@ export type CategoryUncheckedUpdateWithoutTransactionsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -567,6 +602,7 @@ export type CategoryCreateManyUserInput = {
   id?: number
   name: string
   flowType: $Enums.FlowType
+  order: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -574,6 +610,7 @@ export type CategoryCreateManyUserInput = {
 export type CategoryUpdateWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
@@ -583,6 +620,7 @@ export type CategoryUncheckedUpdateWithoutUserInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
@@ -592,6 +630,7 @@ export type CategoryUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   name?: Prisma.StringFieldUpdateOperationsInput | string
   flowType?: Prisma.EnumFlowTypeFieldUpdateOperationsInput | $Enums.FlowType
+  order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -631,6 +670,7 @@ export type CategorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   id?: boolean
   name?: boolean
   flowType?: boolean
+  order?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -643,6 +683,7 @@ export type CategorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   name?: boolean
   flowType?: boolean
+  order?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -653,6 +694,7 @@ export type CategorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   name?: boolean
   flowType?: boolean
+  order?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -663,12 +705,13 @@ export type CategorySelectScalar = {
   id?: boolean
   name?: boolean
   flowType?: boolean
+  order?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "flowType" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["category"]>
+export type CategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "flowType" | "order" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["category"]>
 export type CategoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   transactions?: boolean | Prisma.Category$transactionsArgs<ExtArgs>
@@ -691,6 +734,7 @@ export type $CategoryPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     id: number
     name: string
     flowType: $Enums.FlowType
+    order: number
     userId: number
     createdAt: Date
     updatedAt: Date
@@ -1122,6 +1166,7 @@ export interface CategoryFieldRefs {
   readonly id: Prisma.FieldRef<"Category", 'Int'>
   readonly name: Prisma.FieldRef<"Category", 'String'>
   readonly flowType: Prisma.FieldRef<"Category", 'FlowType'>
+  readonly order: Prisma.FieldRef<"Category", 'Int'>
   readonly userId: Prisma.FieldRef<"Category", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Category", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Category", 'DateTime'>

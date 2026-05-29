@@ -32,6 +32,16 @@ describe('CategoryValidator', () => {
     expect(result).toEqual({ name: 'Food' });
   });
 
+  it('validates update category order', () => {
+    const result = categoryValidator.validateUpdateCategory({ order: 2 });
+
+    expect(result).toEqual({ order: 2 });
+  });
+
+  it('rejects update category order less than 1', () => {
+    expect(() => categoryValidator.validateUpdateCategory({ order: 0 })).toThrow();
+  });
+
   it('rejects empty update body', () => {
     expect(() => categoryValidator.validateUpdateCategory({})).toThrow();
   });

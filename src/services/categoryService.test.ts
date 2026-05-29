@@ -11,6 +11,7 @@ const category: ICategory = {
   id: 10,
   name: 'Groceries',
   flowType: FlowType.OUTFLOW,
+  order: 1,
   userId,
   createdAt: new Date('2024-01-01T00:00:00.000Z'),
   updatedAt: new Date('2024-01-01T00:00:00.000Z'),
@@ -84,6 +85,16 @@ describe('CategoryService', () => {
   });
 
   describe('update', () => {
+    it('updates category order', async () => {
+      const updated: ICategory = { ...category, order: 2 };
+      vi.mocked(categoryRepository.update).mockResolvedValue(updated);
+
+      const result: ICategory = await categoryService.update(userId, category.id, { order: 2 });
+
+      expect(categoryRepository.update).toHaveBeenCalledWith(category.id, userId, { order: 2 });
+      expect(result).toEqual(updated);
+    });
+
     it('throws when category is not found', async () => {
       vi.mocked(categoryRepository.update).mockResolvedValue(null);
 

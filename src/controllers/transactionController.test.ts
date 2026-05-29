@@ -94,6 +94,7 @@ describe('TransactionController', () => {
           id: 3,
           name: 'Food',
           flowType: FlowType.OUTFLOW,
+          order: 1,
           transactions: [transaction],
         },
       },

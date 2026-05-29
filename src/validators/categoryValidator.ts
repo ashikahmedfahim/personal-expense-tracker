@@ -15,6 +15,7 @@ export class CategoryValidator extends BaseValidator implements ICategoryValidat
   private readonly updateCategorySchema = Joi.object({
     name: Joi.string().trim().min(1).max(100),
     flowType: flowTypeSchema,
+    order: Joi.number().integer().positive(),
   }).min(1);
 
   private readonly categoryIdSchema = Joi.object({
