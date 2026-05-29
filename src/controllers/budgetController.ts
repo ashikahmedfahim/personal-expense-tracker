@@ -29,4 +29,12 @@ export class BudgetController extends BaseController implements IBudgetControlle
       this.ok(res, budget, 'Budget updated successfully');
     }, next);
   }
+
+  async deleteBudget(req: Request, res: Response, next: NextFunction): Promise<void> {
+    await this.handleRequest(async () => {
+      const id: number = this.budgetValidator.validateBudgetId(req.params);
+      await this.budgetService.delete(req.user!.id, id);
+      this.ok(res, null, 'Budget deleted successfully');
+    }, next);
+  }
 }

@@ -55,6 +55,7 @@ describe('BudgetService', () => {
       findByCategoryIdAndUserIdInMonth: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     };
 
     categoryRepository = {
@@ -140,6 +141,23 @@ describe('BudgetService', () => {
 
       expect(budgetRepository.update).toHaveBeenCalledWith(budget.id, userId, 750);
       expect(result).toEqual(updated);
+    });
+  });
+
+  describe('delete', () => {
+    it('throws when budget is not found', async () => {
+      vi.mocked(budgetRepository.delete).mockResolvedValue(null);
+
+      await expect(budgetService.delete(userId, budget.id)).rejects.toEqual(
+        new AppError(404, 'Budget not found'),
+      );
+    });
+
+    it('deletes the budget when it exists', async () => {
+      vi.mocked(budgetRepository.delete).mockResolvedValue(budget);
+
+      await expect(budgetService.delete(userId, budget.id)).resolves.toBeUndefined();
+      expect(budgetRepository.delete).toHaveBeenCalledWith(budget.id, userId);
     });
   });
 });

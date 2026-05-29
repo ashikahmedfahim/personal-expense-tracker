@@ -55,4 +55,16 @@ export class BudgetRepository implements IBudgetRepository {
     });
     return response;
   }
+
+  async delete(id: number, userId: number): Promise<IBudget | null> {
+    const existing: IBudget | null = await this.findByIdAndUserId(id, userId);
+    if (!existing) {
+      return null;
+    }
+
+    const response: IBudget = await this.db.budget.delete({
+      where: { id },
+    });
+    return response;
+  }
 }
