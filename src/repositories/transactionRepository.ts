@@ -10,6 +10,15 @@ import type { ITransactionRepository } from '../interfaces/repositories/ITransac
 export class TransactionRepository implements ITransactionRepository {
   constructor(private readonly db: PrismaClient) {}
 
+  async findRecentByUserId(userId: number, limit: number): Promise<ITransaction[]> {
+    const response: ITransaction[] = await this.db.transaction.findMany({
+      where: { userId },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
+      take: limit,
+    });
+    return response;
+  }
+
   async findByIdAndUserId(id: number, userId: number): Promise<ITransaction | null> {
     const response: ITransaction | null = await this.db.transaction.findFirst({
       where: { id, userId },

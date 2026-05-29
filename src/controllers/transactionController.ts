@@ -17,6 +17,13 @@ export class TransactionController extends BaseController implements ITransactio
     super();
   }
 
+  async listRecentTransactions(req: Request, res: Response, next: NextFunction): Promise<void> {
+    await this.handleRequest(async () => {
+      const transactions: ITransaction[] = await this.transactionService.listRecent(req.user!.id);
+      this.ok(res, transactions);
+    }, next);
+  }
+
   async createTransaction(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
       const value: ITransactionCreateInput = this.transactionValidator.validateCreateTransaction(req.body);

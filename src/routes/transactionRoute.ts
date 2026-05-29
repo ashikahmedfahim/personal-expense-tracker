@@ -15,6 +15,7 @@ const transactionService = new TransactionService(transactionRepository, categor
 const transactionValidator = new TransactionValidator();
 const transactionController = new TransactionController(transactionService, transactionValidator);
 
+router.get('/', transactionController.listRecentTransactions.bind(transactionController));
 router.post('/', transactionController.createTransaction.bind(transactionController));
 router.patch('/:id', transactionController.updateTransaction.bind(transactionController));
 router.delete('/:id', transactionController.deleteTransaction.bind(transactionController));

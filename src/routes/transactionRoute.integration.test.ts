@@ -5,6 +5,7 @@ import { TransactionStatus } from '../generated/prisma/enums.js';
 import type { ITransaction } from '../interfaces/Transaction.js';
 import { JWT } from '../utils/JWT.js';
 
+const mockListRecent = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
@@ -24,6 +25,7 @@ vi.mock('../utils/JWT.js', () => ({
 vi.mock('../services/transactionService.js', () => ({
   TransactionService: vi.fn(function TransactionService() {
     return {
+      listRecent: mockListRecent,
       create: mockCreate,
       update: mockUpdate,
       delete: mockDelete,
@@ -90,6 +92,23 @@ describe('Transaction routes (authenticated)', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ message: 'Invalid or expired token' });
     expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  describe('GET /v1/transactions', () => {
+    it('returns 200 with the user recent transactions', async () => {
+      mockListRecent.mockResolvedValue([transaction]);
+
+      const response = await request(app)
+        .get('/v1/transactions')
+        .set(authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: null,
+        data: [serializedTransaction],
+      });
+      expect(mockListRecent).toHaveBeenCalledWith(1);
+    });
   });
 
   describe('POST /v1/transactions', () => {
