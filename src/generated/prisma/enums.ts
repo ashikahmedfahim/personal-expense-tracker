@@ -15,3 +15,12 @@ export const FlowType = {
 } as const
 
 export type FlowType = (typeof FlowType)[keyof typeof FlowType]
+
+
+export const TransactionStatus = {
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type TransactionStatus = (typeof TransactionStatus)[keyof typeof TransactionStatus]
