@@ -55,6 +55,7 @@ describe('TransactionService', () => {
     vi.clearAllMocks();
 
     transactionRepository = {
+      findRecentByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -70,6 +71,17 @@ describe('TransactionService', () => {
     };
 
     transactionService = new TransactionService(transactionRepository, categoryRepository);
+  });
+
+  describe('listRecent', () => {
+    it('returns the last 10 transactions for the user', async () => {
+      vi.mocked(transactionRepository.findRecentByUserId).mockResolvedValue([transaction]);
+
+      const result: ITransaction[] = await transactionService.listRecent(userId);
+
+      expect(transactionRepository.findRecentByUserId).toHaveBeenCalledWith(userId, 10);
+      expect(result).toEqual([transaction]);
+    });
   });
 
   describe('create', () => {

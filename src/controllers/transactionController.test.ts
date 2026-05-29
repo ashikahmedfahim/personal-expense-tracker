@@ -55,6 +55,7 @@ describe('TransactionController', () => {
 
   beforeEach(() => {
     transactionService = {
+      listRecent: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -69,6 +70,18 @@ describe('TransactionController', () => {
     transactionController = new TransactionController(transactionService, transactionValidator);
     res = createMockResponse();
     next = vi.fn();
+  });
+
+  it('lists recent transactions for the authenticated user', async () => {
+    vi.mocked(transactionService.listRecent).mockResolvedValue([transaction]);
+    const req: Request = createRequest();
+
+    await transactionController.listRecentTransactions(req, res, next);
+
+    expect(transactionService.listRecent).toHaveBeenCalledWith(authenticatedUser.id);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ message: null, data: [transaction] });
+    expect(next).not.toHaveBeenCalled();
   });
 
   it('creates a transaction with a success message', async () => {
