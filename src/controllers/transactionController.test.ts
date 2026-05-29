@@ -57,6 +57,7 @@ describe('TransactionController', () => {
     transactionService = {
       create: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     };
 
     transactionValidator = {
@@ -105,6 +106,22 @@ describe('TransactionController', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Transaction updated successfully',
       data: { ...transaction, title: 'Lunch', amount: 12 },
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('deletes a transaction with a success message', async () => {
+    vi.mocked(transactionValidator.validateTransactionId).mockReturnValue(transaction.id);
+    vi.mocked(transactionService.delete).mockResolvedValue(undefined);
+    const req: Request = createRequest({ params: { id: '20' } });
+
+    await transactionController.deleteTransaction(req, res, next);
+
+    expect(transactionService.delete).toHaveBeenCalledWith(authenticatedUser.id, transaction.id);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Transaction deleted successfully',
+      data: null,
     });
     expect(next).not.toHaveBeenCalled();
   });

@@ -7,6 +7,7 @@ import { JWT } from '../utils/JWT.js';
 
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
+const mockDelete = vi.fn();
 
 vi.mock('../database/index.js', () => ({
   SQLDatabase: {
@@ -25,6 +26,7 @@ vi.mock('../services/transactionService.js', () => ({
     return {
       create: mockCreate,
       update: mockUpdate,
+      delete: mockDelete,
     };
   }),
 }));
@@ -201,5 +203,22 @@ describe('Transaction routes (authenticated)', () => {
       expect(mockUpdate).toHaveBeenCalledWith(1, 20, { title: 'Lunch', amount: 12 });
     });
 
+  });
+
+  describe('DELETE /v1/transactions/:id', () => {
+    it('returns 200 with a success message when deletion succeeds', async () => {
+      mockDelete.mockResolvedValue(undefined);
+
+      const response = await request(app)
+        .delete('/v1/transactions/20')
+        .set(authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: 'Transaction deleted successfully',
+        data: null,
+      });
+      expect(mockDelete).toHaveBeenCalledWith(1, 20);
+    });
   });
 });
