@@ -19,15 +19,6 @@ export function createApp(): Express {
     res.status(200).json({ status: 'ok' });
   });
 
-  app.use('/ready', async (_req: Request, res: Response): Promise<void> => {
-    try {
-      await SQLDatabase.getInstance().$queryRaw`SELECT 1`;
-      res.status(200).json({ status: 'ready' });
-    } catch {
-      res.status(503).json({ status: 'not_ready' });
-    }
-  });
-
   app.get('/metrics', verifyMetricsToken, async (_req: Request, res: Response): Promise<void> => {
     res.setHeader('Content-Type', register.contentType);
     res.send(await register.metrics());
