@@ -3,7 +3,11 @@ import { FlowType, TransactionStatus } from '../generated/prisma/enums.js';
 import type { ICategory } from '../interfaces/Category.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
-import type { ITransaction, ITransactionCreateInput } from '../interfaces/Transaction.js';
+import type {
+  ITransaction,
+  ITransactionCreateInput,
+  ITransactionUpdateInput,
+} from '../interfaces/Transaction.js';
 import { AppError } from '../utils/errors.js';
 import { TransactionService } from './transactionService.js';
 
@@ -22,6 +26,11 @@ const createInput: ITransactionCreateInput = {
   title: 'Coffee',
   amount: 4.5,
   categoryId: 3,
+};
+
+const updateInput: ITransactionUpdateInput = {
+  title: 'Lunch',
+  amount: 12,
 };
 
 const transaction: ITransaction = {
@@ -46,7 +55,9 @@ describe('TransactionService', () => {
     vi.clearAllMocks();
 
     transactionRepository = {
+      findByIdAndUserId: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     };
 
     categoryRepository = {
@@ -79,6 +90,49 @@ describe('TransactionService', () => {
       expect(categoryRepository.findByIdAndUserId).toHaveBeenCalledWith(createInput.categoryId, userId);
       expect(transactionRepository.create).toHaveBeenCalledWith(userId, createInput);
       expect(result).toEqual(transaction);
+    });
+  });
+
+  describe('update', () => {
+    it('throws when transaction is not found', async () => {
+      vi.mocked(transactionRepository.update).mockResolvedValue(null);
+
+      await expect(transactionService.update(userId, transaction.id, updateInput)).rejects.toEqual(
+        new AppError(404, 'Transaction not found'),
+      );
+    });
+
+    it('throws when category is not found', async () => {
+      vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(null);
+
+      await expect(
+        transactionService.update(userId, transaction.id, { categoryId: 99 }),
+      ).rejects.toEqual(new AppError(404, 'Category not found'));
+      expect(transactionRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('updates a transaction when it exists', async () => {
+      const updated: ITransaction = { ...transaction, title: 'Lunch', amount: 12 };
+      vi.mocked(transactionRepository.update).mockResolvedValue(updated);
+
+      const result: ITransaction = await transactionService.update(userId, transaction.id, updateInput);
+
+      expect(transactionRepository.update).toHaveBeenCalledWith(transaction.id, userId, updateInput);
+      expect(result).toEqual(updated);
+    });
+
+    it('validates category when categoryId is provided', async () => {
+      const updated: ITransaction = { ...transaction, categoryId: 5 };
+      vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue({
+        ...category,
+        id: 5,
+      });
+      vi.mocked(transactionRepository.update).mockResolvedValue(updated);
+
+      const result: ITransaction = await transactionService.update(userId, transaction.id, { categoryId: 5 });
+
+      expect(categoryRepository.findByIdAndUserId).toHaveBeenCalledWith(5, userId);
+      expect(result).toEqual(updated);
     });
   });
 });

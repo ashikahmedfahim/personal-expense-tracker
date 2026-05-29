@@ -1,10 +1,21 @@
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { TransactionStatus } from '../generated/prisma/enums.js';
-import type { ITransaction, ITransactionCreateInput } from '../interfaces/Transaction.js';
+import type {
+  ITransaction,
+  ITransactionCreateInput,
+  ITransactionUpdateInput,
+} from '../interfaces/Transaction.js';
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 
 export class TransactionRepository implements ITransactionRepository {
   constructor(private readonly db: PrismaClient) {}
+
+  async findByIdAndUserId(id: number, userId: number): Promise<ITransaction | null> {
+    const response: ITransaction | null = await this.db.transaction.findFirst({
+      where: { id, userId },
+    });
+    return response;
+  }
 
   async create(userId: number, data: ITransactionCreateInput): Promise<ITransaction> {
     const response: ITransaction = await this.db.transaction.create({
@@ -13,6 +24,19 @@ export class TransactionRepository implements ITransactionRepository {
         userId,
         status: TransactionStatus.COMPLETED,
       },
+    });
+    return response;
+  }
+
+  async update(id: number, userId: number, data: ITransactionUpdateInput): Promise<ITransaction | null> {
+    const existing: ITransaction | null = await this.findByIdAndUserId(id, userId);
+    if (!existing) {
+      return null;
+    }
+
+    const response: ITransaction = await this.db.transaction.update({
+      where: { id },
+      data,
     });
     return response;
   }
