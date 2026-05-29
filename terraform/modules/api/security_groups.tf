@@ -12,7 +12,7 @@ resource "aws_security_group" "alb" {
   }
 
   dynamic "ingress" {
-    for_each = var.acm_certificate_arn != "" ? [1] : []
+    for_each = local.enable_https ? [1] : []
     content {
       description = "HTTPS"
       from_port   = 443
