@@ -1,0 +1,14 @@
+aws_region = "eu-north-1"
+
+domain_name = "api.personalexpensetracker.site"
+
+# Namecheap DNS — do not set Route 53 variables. See ../../NAMECHEAP_DNS.md
+# route53_zone_id   = ""
+# route53_zone_name = ""
+
+jwt_secret    = "replace-with-long-random-string"
+metrics_token = "replace-with-long-random-metrics-token"
+
+ecs_desired_count = 1
+ecs_min_capacity  = 1
+ecs_max_capacity  = 3

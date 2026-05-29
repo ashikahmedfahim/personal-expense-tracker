@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+coverage-tmp
+.git
+.github
+.env
+.env.*
+!.env_copy
+*.md
+docker-compose*.yml
+prometheus.yml
+terraform
+.cursor
+.DS_Store
+**/*.test.ts
+**/*.integration.test.ts

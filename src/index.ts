@@ -3,12 +3,12 @@ import { createApp } from './app.js';
 import { SQLDatabase } from './database/index.js';
 
 const app = createApp();
-const port = 3000;
+const port = Number(process.env.PORT) || 3000;
 
 SQLDatabase.getInstance().$connect();
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+const server = app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
 
 let isShuttingDown = false;
@@ -17,8 +17,11 @@ const shutdown = async (): Promise<void> => {
   if (isShuttingDown) return;
   isShuttingDown = true;
 
-  await SQLDatabase.getInstance().$disconnect();
-  process.exit(0);
+  server.close(() => {
+    void SQLDatabase.getInstance().$disconnect().finally(() => {
+      process.exit(0);
+    });
+  });
 };
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

@@ -1,0 +1,57 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "src/**"
+      - "Dockerfile"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/docker-prod-entrypoint.sh"
+      - "scripts/ecs-deploy.sh"
+      - "tsconfig.build.json"
+      - "prisma.config.ts"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-north-1
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, push, and deploy
+        env:
+          ECR_REGISTRY: ${{ secrets.ECR_REPOSITORY_URL }}
+          ECS_CLUSTER: ${{ secrets.ECS_CLUSTER_NAME }}
+          ECS_SERVICE: ${{ secrets.ECS_SERVICE_NAME }}
+          ECS_TASK_FAMILY: ${{ secrets.ECS_TASK_FAMILY }}
+        run: |
+          IMAGE="${ECR_REGISTRY}:${GITHUB_SHA}"
+          docker build -t "${IMAGE}" -t "${ECR_REGISTRY}:staging" .
+          docker push "${IMAGE}"
+          docker push "${ECR_REGISTRY}:staging"
+          ./scripts/ecs-deploy.sh "${ECS_CLUSTER}" "${ECS_SERVICE}" "${ECS_TASK_FAMILY}" "${IMAGE}"
+
+      - name: Health check
+        run: curl -fsS "${{ secrets.API_URL }}/health"
