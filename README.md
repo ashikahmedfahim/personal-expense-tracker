@@ -15,6 +15,7 @@ A TypeScript REST API for user authentication and expense categories (inflow/out
 | **Health checks** | `/health` (liveness) and `/ready` (database connectivity) |
 | **Graceful shutdown** | `SIGINT` / `SIGTERM` disconnect Prisma before exit |
 | **Testing** | Vitest unit tests + Supertest integration tests |
+| **CI** | GitHub Actions runs typecheck and tests on push to `master` and on pull requests |
 
 ## Architecture
 
@@ -167,6 +168,7 @@ Error (global handler, rate limiter, `AppError`):
 ## Project structure
 
 ```
+.github/workflows/       # CI (GitHub Actions)
 src/
 ├── app.ts                 # Express app factory
 ├── index.ts               # Server entry + graceful shutdown
@@ -190,7 +192,7 @@ src/
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22
 - PostgreSQL (local or Docker)
 
 ### Setup
@@ -357,6 +359,28 @@ Tests are split by layer:
 Run everything:
 
 ```bash
+npm test
+```
+
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on **push to `master`** and on **all pull requests**.
+
+| Step | Command |
+|------|---------|
+| Install | `npm ci` |
+| Prisma client | `npx prisma generate` |
+| Typecheck | `npm run typecheck` |
+| Test | `npm test` |
+
+The workflow uses **Node.js 22** on `ubuntu-latest` (same major version as `Dockerfile.dev`). No database is required in CI — tests mock services and the database layer.
+
+To reproduce CI locally:
+
+```bash
+npm ci
+npx prisma generate
+npm run typecheck
 npm test
 ```
 
