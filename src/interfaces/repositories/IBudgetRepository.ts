@@ -10,4 +10,5 @@ export interface IBudgetRepository {
   ): Promise<IBudget | null>;
   create(userId: number, data: IBudgetCreateInput, date: Date): Promise<IBudget>;
   update(id: number, userId: number, amount: number): Promise<IBudget | null>;
+  delete(id: number, userId: number): Promise<IBudget | null>;
 }

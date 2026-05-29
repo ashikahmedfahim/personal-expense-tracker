@@ -51,4 +51,11 @@ export class BudgetService implements IBudgetService {
     }
     return budget;
   }
+
+  async delete(userId: number, id: number): Promise<void> {
+    const budget: IBudget | null = await this.budgetRepository.delete(id, userId);
+    if (!budget) {
+      throw new AppError(404, 'Budget not found');
+    }
+  }
 }

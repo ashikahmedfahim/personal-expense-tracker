@@ -49,6 +49,7 @@ describe('BudgetController', () => {
     budgetService = {
       create: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     };
 
     budgetValidator = {
@@ -93,6 +94,22 @@ describe('BudgetController', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Budget updated successfully',
       data: { ...budget, amount: 750 },
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('deletes a budget with a success message', async () => {
+    vi.mocked(budgetValidator.validateBudgetId).mockReturnValue(budget.id);
+    vi.mocked(budgetService.delete).mockResolvedValue(undefined);
+    const req: Request = createRequest({ params: { id: '1' } });
+
+    await budgetController.deleteBudget(req, res, next);
+
+    expect(budgetService.delete).toHaveBeenCalledWith(authenticatedUser.id, budget.id);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Budget deleted successfully',
+      data: null,
     });
     expect(next).not.toHaveBeenCalled();
   });
