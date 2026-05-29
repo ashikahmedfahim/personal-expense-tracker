@@ -1,0 +1,13 @@
+aws_region = "eu-north-1"
+vpc_cidr   = "10.1.0.0/16"
+
+domain_name = "staging-api.personalexpensetracker.site"
+
+# Namecheap DNS — see ../../NAMECHEAP_DNS.md
+
+jwt_secret    = "replace-with-staging-jwt-secret"
+metrics_token = "replace-with-staging-metrics-token"
+
+ecs_desired_count = 1
+ecs_min_capacity  = 1
+ecs_max_capacity  = 3
