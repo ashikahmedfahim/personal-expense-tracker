@@ -68,8 +68,10 @@ describe('TransactionService', () => {
     categoryRepository = {
       findAllByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
+      getLastOrderByUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateOrders: vi.fn(),
       delete: vi.fn(),
     };
 
