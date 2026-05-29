@@ -22,3 +22,11 @@ export interface ITransactionCreateInput {
   description?: string;
   date?: Date;
 }
+
+export interface ITransactionUpdateInput {
+  title?: string;
+  amount?: number;
+  categoryId?: number;
+  description?: string | null;
+  date?: Date;
+}

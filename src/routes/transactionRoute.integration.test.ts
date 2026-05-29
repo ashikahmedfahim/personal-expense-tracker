@@ -6,6 +6,7 @@ import type { ITransaction } from '../interfaces/Transaction.js';
 import { JWT } from '../utils/JWT.js';
 
 const mockCreate = vi.fn();
+const mockUpdate = vi.fn();
 
 vi.mock('../database/index.js', () => ({
   SQLDatabase: {
@@ -23,6 +24,7 @@ vi.mock('../services/transactionService.js', () => ({
   TransactionService: vi.fn(function TransactionService() {
     return {
       create: mockCreate,
+      update: mockUpdate,
     };
   }),
 }));
@@ -101,6 +103,24 @@ describe('Transaction routes (authenticated)', () => {
       expect(mockCreate).not.toHaveBeenCalled();
     });
 
+    it('returns 400 when amount is not positive', async () => {
+      const negativeResponse = await request(app)
+        .post('/v1/transactions')
+        .set(authHeader)
+        .send({ ...validCreateBody, amount: -1 });
+
+      expect(negativeResponse.status).toBe(400);
+      expect(mockCreate).not.toHaveBeenCalled();
+
+      const zeroResponse = await request(app)
+        .post('/v1/transactions')
+        .set(authHeader)
+        .send({ ...validCreateBody, amount: 0 });
+
+      expect(zeroResponse.status).toBe(400);
+      expect(mockCreate).not.toHaveBeenCalled();
+    });
+
     it('returns 201 when creation succeeds', async () => {
       mockCreate.mockResolvedValue(transaction);
 
@@ -127,5 +147,59 @@ describe('Transaction routes (authenticated)', () => {
 
       expect(mockCreate).toHaveBeenCalledWith(1, validCreateBody);
     });
+  });
+
+  describe('PATCH /v1/transactions/:id', () => {
+    it('returns 400 when the request body fails validation', async () => {
+      const response = await request(app)
+        .patch('/v1/transactions/20')
+        .set(authHeader)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message');
+      expect(typeof response.body.message).toBe('string');
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when amount is not positive', async () => {
+      const negativeResponse = await request(app)
+        .patch('/v1/transactions/20')
+        .set(authHeader)
+        .send({ amount: -5 });
+
+      expect(negativeResponse.status).toBe(400);
+      expect(mockUpdate).not.toHaveBeenCalled();
+
+      const zeroResponse = await request(app)
+        .patch('/v1/transactions/20')
+        .set(authHeader)
+        .send({ amount: 0 });
+
+      expect(zeroResponse.status).toBe(400);
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it('returns 200 when update succeeds', async () => {
+      const updated: ITransaction = { ...transaction, title: 'Lunch', amount: 12 };
+      mockUpdate.mockResolvedValue(updated);
+
+      const response = await request(app)
+        .patch('/v1/transactions/20')
+        .set(authHeader)
+        .send({ title: 'Lunch', amount: 12 });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: 'Transaction updated successfully',
+        data: {
+          ...serializedTransaction,
+          title: 'Lunch',
+          amount: 12,
+        },
+      });
+      expect(mockUpdate).toHaveBeenCalledWith(1, 20, { title: 'Lunch', amount: 12 });
+    });
+
   });
 });

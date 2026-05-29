@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextFunction, Request, Response } from 'express';
 import { TransactionStatus } from '../generated/prisma/enums.js';
 import type { IRequestUser } from '../interfaces/auth.js';
-import type { ITransaction, ITransactionCreateInput } from '../interfaces/Transaction.js';
+import type {
+  ITransaction,
+  ITransactionCreateInput,
+  ITransactionUpdateInput,
+} from '../interfaces/Transaction.js';
 import type { ITransactionService } from '../interfaces/services/ITransactionService.js';
 import type { ITransactionValidator } from '../interfaces/validators/ITransactionValidator.js';
 import { TransactionController } from './transactionController.js';
@@ -52,10 +56,13 @@ describe('TransactionController', () => {
   beforeEach(() => {
     transactionService = {
       create: vi.fn(),
+      update: vi.fn(),
     };
 
     transactionValidator = {
       validateCreateTransaction: vi.fn(),
+      validateUpdateTransaction: vi.fn(),
+      validateTransactionId: vi.fn(),
     };
 
     transactionController = new TransactionController(transactionService, transactionValidator);
@@ -80,6 +87,24 @@ describe('TransactionController', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Transaction created successfully',
       data: transaction,
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('updates a transaction with a success message', async () => {
+    const input: ITransactionUpdateInput = { title: 'Lunch', amount: 12 };
+    vi.mocked(transactionValidator.validateTransactionId).mockReturnValue(transaction.id);
+    vi.mocked(transactionValidator.validateUpdateTransaction).mockReturnValue(input);
+    vi.mocked(transactionService.update).mockResolvedValue({ ...transaction, title: 'Lunch', amount: 12 });
+    const req: Request = createRequest({ body: input, params: { id: '20' } });
+
+    await transactionController.updateTransaction(req, res, next);
+
+    expect(transactionService.update).toHaveBeenCalledWith(authenticatedUser.id, transaction.id, input);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Transaction updated successfully',
+      data: { ...transaction, title: 'Lunch', amount: 12 },
     });
     expect(next).not.toHaveBeenCalled();
   });

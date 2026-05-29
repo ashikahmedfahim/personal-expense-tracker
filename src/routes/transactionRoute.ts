@@ -16,5 +16,6 @@ const transactionValidator = new TransactionValidator();
 const transactionController = new TransactionController(transactionService, transactionValidator);
 
 router.post('/', transactionController.createTransaction.bind(transactionController));
+router.patch('/:id', transactionController.updateTransaction.bind(transactionController));
 
 export { router as transactionRoute };
