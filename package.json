@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/index.ts"
@@ -35,6 +36,7 @@
     "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.7",
     "prisma": "^7.7.0",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",

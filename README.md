@@ -1,6 +1,6 @@
 # Personal Expense Tracker API
 
-A TypeScript REST API for user authentication and expense categories (inflow/outflow), built with Express 5, Prisma, and PostgreSQL.
+A TypeScript REST API for personal finance: user authentication, categories (inflow/outflow), transactions, and monthly budgets per category. Built with Express 5, Prisma, and PostgreSQL.
 
 ## Features
 
@@ -8,13 +8,16 @@ A TypeScript REST API for user authentication and expense categories (inflow/out
 |--------|---------|
 | **Layered architecture** | Routes → controllers → validators → services → repositories → database |
 | **JWT authentication** | Bearer tokens on protected routes; payload carries `id` and `email` |
+| **Categories** | Inflow/outflow categories with per-user display order (auto-assigned on create, reorderable) |
+| **Transactions** | CRUD linked to categories; status set to `COMPLETED` on create |
+| **Budgets** | Monthly budgets per outflow category (one budget per category per UTC month) |
 | **Rate limiting** | Global API limit plus separate limits for registration and login |
 | **Request validation** | Joi schemas for request bodies and route params |
 | **Structured logging** | Pino HTTP logging with sensitive field redaction |
 | **Metrics** | Prometheus histograms/counters on `/metrics` (token-protected) |
 | **Health checks** | `/health` (liveness) and `/ready` (database connectivity) |
 | **Graceful shutdown** | `SIGINT` / `SIGTERM` disconnect Prisma before exit |
-| **Testing** | Vitest unit tests + Supertest integration tests |
+| **Testing** | Vitest unit tests + Supertest integration tests (130+ tests) |
 | **CI** | GitHub Actions runs typecheck and tests on push to `master` and on pull requests |
 
 ## Architecture
@@ -27,6 +30,8 @@ flowchart TB
     UserRoutes["/v1/users"]
     Protected["/v1 + auth"]
     CatRoutes["/categories"]
+    TxRoutes["/transactions"]
+    BudRoutes["/budgets"]
   end
 
   subgraph middleware [Middleware]
@@ -39,15 +44,23 @@ flowchart TB
   subgraph app [Application Layer]
     UserCtrl["UserController"]
     CatCtrl["CategoryController"]
+    TxCtrl["TransactionController"]
+    BudCtrl["BudgetController"]
     UserVal["UserValidator"]
     CatVal["CategoryValidator"]
+    TxVal["TransactionValidator"]
+    BudVal["BudgetValidator"]
     UserSvc["UserService"]
     CatSvc["CategoryService"]
+    TxSvc["TransactionService"]
+    BudSvc["BudgetService"]
   end
 
   subgraph data [Data Layer]
     UserRepo["UserRepository"]
     CatRepo["CategoryRepository"]
+    TxRepo["TransactionRepository"]
+    BudRepo["BudgetRepository"]
     DB["SQLDatabase / Prisma"]
   end
 
@@ -59,16 +72,28 @@ flowchart TB
   App --> Protected
   Protected --> Auth
   Protected --> CatRoutes
+  Protected --> TxRoutes
+  Protected --> BudRoutes
   UserRoutes --> UserCtrl
   CatRoutes --> CatCtrl
+  TxRoutes --> TxCtrl
+  BudRoutes --> BudCtrl
   UserCtrl --> UserVal
   UserCtrl --> UserSvc
   CatCtrl --> CatVal
   CatCtrl --> CatSvc
+  TxCtrl --> TxVal
+  TxCtrl --> TxSvc
+  BudCtrl --> BudVal
+  BudCtrl --> BudSvc
   UserSvc --> UserRepo
   CatSvc --> CatRepo
+  TxSvc --> TxRepo
+  BudSvc --> BudRepo
   UserRepo --> DB
   CatRepo --> DB
+  TxRepo --> DB
+  BudRepo --> DB
 ```
 
 ### Layer responsibilities
@@ -78,9 +103,22 @@ flowchart TB
 | **Routes** | Wire HTTP verbs, rate limiters, and controller handlers |
 | **Controllers** | Parse requests, call validators/services, shape HTTP responses |
 | **Validators** | Joi validation; throw `AppError(400)` on invalid input |
-| **Services** | Business rules (duplicate email, credentials, ownership) |
+| **Services** | Business rules (auth, ownership, category order, budget limits, transaction rules) |
 | **Repositories** | Prisma queries; accept `PrismaClient` via constructor |
 | **Middleware** | Auth (`Authorization: Bearer`), rate limits, logging, metrics |
+
+### Data model
+
+| Model | Key fields | Notes |
+|-------|------------|--------|
+| **User** | `email`, `password` (hashed) | Owns categories, transactions, budgets |
+| **Category** | `name`, `flowType`, `order` | `order` is per-user; unique sequence for display |
+| **Transaction** | `title`, `amount`, `date`, `status`, `categoryId` | Create API sets `status` to `COMPLETED` |
+| **Budget** | `amount`, `date`, `categoryId` | `date` stored as month start (UTC); outflow categories only |
+
+Enums: `FlowType` (`INFLOW`, `OUTFLOW`), `TransactionStatus` (`PENDING`, `COMPLETED`, `CANCELLED`).
+
+Schema and migrations live in [`src/prisma/`](src/prisma/).
 
 ### API response contract
 
@@ -144,17 +182,23 @@ Error (global handler, rate limiter, `AppError`):
 
 ### Protected (JWT required)
 
+All protected routes require:
+
+```http
+Authorization: Bearer <token>
+```
+
+#### Categories (`/v1/categories`)
+
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/v1/categories` | List categories for authenticated user |
+| `GET` | `/v1/categories` | List categories (sorted by `order`) |
 | `GET` | `/v1/categories/:id` | Get one category |
-| `POST` | `/v1/categories` | Create category |
-| `PATCH` | `/v1/categories/:id` | Update category (partial body) |
-| `DELETE` | `/v1/categories/:id` | Delete category |
+| `POST` | `/v1/categories` | Create category (order assigned automatically: 1, 2, 3, …) |
+| `PATCH` | `/v1/categories/:id` | Update name, `flowType`, and/or `order` |
+| `DELETE` | `/v1/categories/:id` | Delete category (remaining orders renumbered) |
 
-**Auth header:** `Authorization: Bearer <token>`
-
-**Category body example:**
+**Create body:**
 
 ```json
 {
@@ -163,7 +207,114 @@ Error (global handler, rate limiter, `AppError`):
 }
 ```
 
-`flowType` is `INFLOW` or `OUTFLOW`.
+`flowType`: `INFLOW` or `OUTFLOW`.
+
+**Update body (at least one field):**
+
+```json
+{
+  "name": "Food",
+  "flowType": "OUTFLOW",
+  "order": 2
+}
+```
+
+#### Transactions (`/v1/transactions`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/v1/transactions` | Last 10 transactions (all categories, newest first) |
+| `GET` | `/v1/transactions/current-month` | Up to 20 transactions in the current UTC month, grouped by category |
+| `POST` | `/v1/transactions` | Create transaction (`status` always `COMPLETED`; not accepted in body) |
+| `PATCH` | `/v1/transactions/:id` | Update transaction (partial body) |
+| `DELETE` | `/v1/transactions/:id` | Delete transaction |
+
+**Create body:**
+
+```json
+{
+  "title": "Coffee",
+  "amount": 4.5,
+  "categoryId": 3,
+  "description": "Morning coffee",
+  "date": "2024-06-15T12:00:00.000Z"
+}
+```
+
+| Field | Rules |
+|-------|--------|
+| `title` | Required |
+| `amount` | Required, must be **> 0** |
+| `categoryId` | Required; must belong to the user |
+| `description` | Optional |
+| `date` | Optional ISO date; defaults to now |
+
+**Update body (at least one field):** `title`, `amount` (> 0), `categoryId`, `description`, `date`.
+
+**Current month response shape** — array of groups:
+
+```json
+{
+  "message": null,
+  "data": [
+    {
+      "category": {
+        "id": 3,
+        "name": "Food",
+        "flowType": "OUTFLOW",
+        "order": 1,
+        "transactions": [
+          { "id": 20, "title": "Coffee", "amount": 4.5, "description": null, "date": "2024-06-01T10:00:00.000Z" }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Groups are sorted by category `order`. Only the 20 most recent transactions in the month are included (across all categories).
+
+#### Budgets (`/v1/budgets`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/budgets` | Create monthly budget for an outflow category |
+| `PATCH` | `/v1/budgets/:id` | Update budget amount only |
+| `DELETE` | `/v1/budgets/:id` | Delete budget |
+
+**Rules:**
+
+- Budgets are tied to a **category** (`categoryId`).
+- Only **OUTFLOW** categories can have budgets.
+- **One budget per category per UTC month** (duplicate returns `409`).
+- Month is derived from optional `date` (defaults to current month); stored as the first day of that month (UTC).
+
+**Create body:**
+
+```json
+{
+  "categoryId": 3,
+  "amount": 500,
+  "date": "2024-06-15T12:00:00.000Z"
+}
+```
+
+**Update body:**
+
+```json
+{
+  "amount": 750
+}
+```
+
+### Common HTTP status codes
+
+| Code | Typical cause |
+|------|----------------|
+| `400` | Validation error or business rule (e.g. inflow category budget) |
+| `401` | Missing/invalid JWT |
+| `404` | Resource not found or not owned by user |
+| `409` | Conflict (duplicate email, duplicate monthly budget) |
 
 ## Project structure
 
@@ -184,7 +335,7 @@ src/
 ├── routes/                # Route modules + integration tests
 ├── services/              # Business logic
 ├── types/                 # Express augmentation (req.user)
-├── utils/                 # JWT, bcrypt, AppError
+├── utils/                 # JWT, bcrypt, AppError, date helpers (UTC month ranges)
 └── validators/            # Joi validators
 ```
 
@@ -285,7 +436,29 @@ curl -s -X POST http://localhost:3000/v1/users/login \
   -d '{"email":"jane@example.com","password":"password123"}'
 ```
 
-Use the `data` token from login as `Authorization: Bearer <token>` on `/v1/categories` routes.
+Use the token from the login response as `Authorization: Bearer <token>` on `/v1/categories`, `/v1/transactions`, and `/v1/budgets` routes.
+
+Example — create an outflow category, transaction, and budget:
+
+```bash
+# Create category
+curl -s -X POST http://localhost:3000/v1/categories \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Groceries","flowType":"OUTFLOW"}'
+
+# Create transaction (categoryId from previous response)
+curl -s -X POST http://localhost:3000/v1/transactions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Coffee","amount":4.5,"categoryId":3}'
+
+# Create monthly budget for the same category
+curl -s -X POST http://localhost:3000/v1/budgets \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"categoryId":3,"amount":500}'
+```
 
 ### Services and ports
 
@@ -344,10 +517,13 @@ docker compose -f docker-compose.dev.yml exec app npm test
 |---------|-------------|
 | `npm run dev` | Start API with hot reload (`tsx watch`) |
 | `npm test` | Run all Vitest tests |
+| `npm run test:coverage` | Run tests with V8 coverage report |
 | `npm run test:watch` | Vitest watch mode |
 | `npm run typecheck` | TypeScript check without emit |
 
 ## Testing
+
+**130 tests** across **19 files** (unit + integration).
 
 Tests are split by layer:
 
@@ -361,6 +537,41 @@ Run everything:
 ```bash
 npm test
 ```
+
+### Test coverage
+
+Coverage uses [`@vitest/coverage-v8`](https://vitest.dev/guide/coverage.html). Generate a terminal summary and HTML report under `coverage/`:
+
+```bash
+npm run test:coverage
+```
+
+Open the HTML report: `coverage/index.html`.
+
+**Overall (last measured):**
+
+| Metric | Coverage |
+|--------|----------|
+| Statements | ~76% |
+| Lines | ~76% |
+| Functions | ~76% |
+| Branches | ~60% |
+
+**By layer:**
+
+| Layer | Statement coverage | Notes |
+|-------|-------------------|--------|
+| Services | ~96% | Business rules; primary unit-test focus |
+| Controllers | ~100% | Unit tests + integration routes |
+| Validators | ~100% | Joi schemas |
+| Routes | ~100% | HTTP wiring via Supertest |
+| Middleware (auth) | ~96% | JWT verification |
+| Repositories | ~6% | Prisma queries not exercised — integration tests mock services |
+| App / infra | Mixed | `app.ts` health/ready/metrics paths, `logger.ts`, `metrics.ts` partially covered |
+
+**Not executed in tests:** `src/index.ts` (server bootstrap), `src/database/index.ts` (Prisma singleton lifecycle).
+
+CI runs `npm test` only (no coverage gate). Re-run `npm run test:coverage` locally after changes to refresh numbers.
 
 ## Continuous integration
 
@@ -389,7 +600,9 @@ npm test
 - JWTs are signed with **HS256**; verification pins `algorithms: ['HS256']` to block algorithm-confusion attacks.
 - Passwords are never returned in API responses (`IUserResponse` omits `password`).
 - Login and registration use dedicated, stricter rate limiters than the general API.
-- Protected category routes scope all queries by `req.user.id` from the JWT.
+- Protected routes scope all queries by `req.user.id` from the JWT (categories, transactions, budgets).
+- Transaction `status` is set server-side on create (`COMPLETED`); clients cannot override it.
+- Budgets are limited to outflow categories with at most one entry per category per UTC month.
 
 ## License
 
