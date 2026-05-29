@@ -4,4 +4,11 @@ node_modules
 .DS_Store
 
 /generated/prisma
+dist
 coverage
+terraform/**/.terraform
+terraform/**/*.tfstate
+terraform/**/*.tfstate.*
+terraform/**/.terraform.lock.hcl
+terraform/**/terraform.tfvars
+!terraform/**/terraform.tfvars.example

@@ -360,6 +360,54 @@ npm run dev
 
 Server runs at `http://localhost:3000`.
 
+## Production Docker image
+
+Multi-stage image: compile TypeScript, run Prisma migrations on start, then `node dist/index.js`.
+
+| File | Purpose |
+|------|---------|
+| [`Dockerfile`](Dockerfile) | Production image (non-root user, `dumb-init`, health check on `/health`) |
+| [`Dockerfile.dev`](Dockerfile.dev) | Local dev with hot reload |
+| [`scripts/docker-prod-entrypoint.sh`](scripts/docker-prod-entrypoint.sh) | `prisma migrate deploy` + start API |
+
+```bash
+npm run build
+docker build -t expense-tracker-api .
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e JWT_SECRET="..." \
+  -e METRICS_TOKEN="..." \
+  expense-tracker-api
+```
+
+## Deploy to AWS (Terraform)
+
+Infrastructure lives in [`terraform/`](terraform/) — **eu-north-1 (Stockholm)**, **ECS Fargate** (no EC2), **RDS PostgreSQL**, **HTTPS** on your custom domain, **staging + prod** environments, and **GitHub Actions** deploys.
+
+| AWS service | Role |
+|-------------|------|
+| ECS Fargate | API containers (autoscale 1–3 tasks per env) |
+| ALB | HTTPS termination and load balancing |
+| ACM + Route 53 | TLS certificate and DNS (optional manual DNS) |
+| RDS PostgreSQL 17 | Per-environment database |
+| ECR | Per-environment container registry |
+| Secrets Manager | App secrets per environment |
+
+**Full guide:** [terraform/README.md](terraform/README.md)
+
+```bash
+# 1) GitHub OIDC (once)
+cd terraform/bootstrap && terraform apply
+
+# 2) Staging then prod
+cd terraform/environments/staging && cp terraform.tfvars.example terraform.tfvars && terraform apply
+cd terraform/environments/prod    && cp terraform.tfvars.example terraform.tfvars && terraform apply
+
+# 3) Push to main → deploy-staging workflow; prod via "Deploy Production" workflow
+```
+
+**Domains:** production API at `https://api.personalexpensetracker.site`, staging at `https://staging-api.personalexpensetracker.site`. DNS is on **Namecheap** — see [terraform/NAMECHEAP_DNS.md](terraform/NAMECHEAP_DNS.md). [www.personalexpensetracker.site](https://www.personalexpensetracker.site/) stays on nginx.
+
 ## Run with Docker locally
 
 The dev stack runs the API, PostgreSQL, Prometheus, Grafana, and pgAdmin together via `docker-compose.dev.yml`.
@@ -515,6 +563,8 @@ docker compose -f docker-compose.dev.yml exec app npm test
 
 | Command | Description |
 |---------|-------------|
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm start` | Run compiled API (`node dist/index.js`) |
 | `npm run dev` | Start API with hot reload (`tsx watch`) |
 | `npm test` | Run all Vitest tests |
 | `npm run test:coverage` | Run tests with V8 coverage report |
