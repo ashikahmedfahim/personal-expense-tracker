@@ -50,6 +50,7 @@ export class TransactionRepository implements ITransactionRepository {
             id: true,
             name: true,
             flowType: true,
+            order: true,
           },
         },
       },

@@ -6,6 +6,7 @@ export interface ICategory {
   id: number;
   name: string;
   flowType: FlowType;
+  order: number;
   userId: number;
   createdAt: Date;
   updatedAt: Date;
@@ -19,4 +20,5 @@ export interface ICategoryCreateInput {
 export interface ICategoryUpdateInput {
   name?: string;
   flowType?: FlowType;
+  order?: number;
 }

@@ -8,7 +8,7 @@ export class CategoryRepository implements ICategoryRepository {
   async findAllByUserId(userId: number): Promise<ICategory[]> {
     const response: ICategory[] = await this.db.category.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ order: 'asc' }, { id: 'asc' }],
     });
     return response;
   }
@@ -21,10 +21,12 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async create(userId: number, data: ICategoryCreateInput): Promise<ICategory> {
+    const order: number = await this.getNextOrder(userId);
     const response: ICategory = await this.db.category.create({
       data: {
         ...data,
         userId,
+        order,
       },
     });
     return response;
@@ -36,11 +38,20 @@ export class CategoryRepository implements ICategoryRepository {
       return null;
     }
 
-    const response: ICategory = await this.db.category.update({
-      where: { id },
-      data,
-    });
-    return response;
+    const { order, ...rest } = data;
+
+    if (order !== undefined) {
+      await this.reorder(userId, id, order);
+    }
+
+    if (Object.keys(rest).length > 0) {
+      await this.db.category.update({
+        where: { id },
+        data: rest,
+      });
+    }
+
+    return this.findByIdAndUserId(id, userId);
   }
 
   async delete(id: number, userId: number): Promise<ICategory | null> {
@@ -52,6 +63,61 @@ export class CategoryRepository implements ICategoryRepository {
     const response: ICategory = await this.db.category.delete({
       where: { id },
     });
+
+    await this.compactOrders(userId);
     return response;
+  }
+
+  private async getNextOrder(userId: number): Promise<number> {
+    const result = await this.db.category.aggregate({
+      where: { userId },
+      _max: { order: true },
+    });
+    return (result._max.order ?? 0) + 1;
+  }
+
+  private async reorder(userId: number, categoryId: number, newOrder: number): Promise<void> {
+    const categories: ICategory[] = await this.db.category.findMany({
+      where: { userId },
+      orderBy: { order: 'asc' },
+    });
+
+    const currentIndex: number = categories.findIndex((category) => category.id === categoryId);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const [moved] = categories.splice(currentIndex, 1);
+    if (!moved) {
+      return;
+    }
+
+    const targetIndex: number = Math.min(Math.max(newOrder - 1, 0), categories.length);
+    categories.splice(targetIndex, 0, moved);
+
+    await this.db.$transaction(
+      categories.map((category, index) =>
+        this.db.category.update({
+          where: { id: category.id },
+          data: { order: index + 1 },
+        }),
+      ),
+    );
+  }
+
+  private async compactOrders(userId: number): Promise<void> {
+    const categories: ICategory[] = await this.db.category.findMany({
+      where: { userId },
+      orderBy: { order: 'asc' },
+    });
+
+    await this.db.$transaction(
+      categories.map((category, index) =>
+        this.db.category.update({
+          where: { id: category.id },
+          data: { order: index + 1 },
+        }),
+      ),
+    );
   }
 }

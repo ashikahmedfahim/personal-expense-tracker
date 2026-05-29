@@ -18,6 +18,7 @@ const category: ICategory = {
   id: 3,
   name: 'Food',
   flowType: FlowType.OUTFLOW,
+  order: 1,
   userId,
   createdAt: new Date('2024-01-01T00:00:00.000Z'),
   updatedAt: new Date('2024-01-01T00:00:00.000Z'),
@@ -91,12 +92,14 @@ describe('TransactionService', () => {
       id: category.id,
       name: category.name,
       flowType: category.flowType,
+      order: category.order,
     };
 
     const transportCategory = {
       id: 5,
       name: 'Transport',
       flowType: FlowType.OUTFLOW,
+      order: 2,
     };
 
     const transportTransaction: ITransaction = {

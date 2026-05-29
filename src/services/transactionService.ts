@@ -54,12 +54,13 @@ export class TransactionService implements ITransactionService {
           id: item.category.id,
           name: item.category.name,
           flowType: item.category.flowType,
+          order: item.category.order,
           transactions: [item.transaction],
         },
       });
     }
 
-    return [...groups.values()].sort((a, b) => a.category.name.localeCompare(b.category.name));
+    return [...groups.values()].sort((a, b) => a.category.order - b.category.order);
   }
 
   async create(userId: number, data: ITransactionCreateInput): Promise<ITransaction> {

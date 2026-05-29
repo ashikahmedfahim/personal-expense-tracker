@@ -48,6 +48,7 @@ const category: ICategory = {
   id: 10,
   name: 'Groceries',
   flowType: FlowType.OUTFLOW,
+  order: 1,
   userId: 1,
   createdAt: new Date('2024-01-01T00:00:00.000Z'),
   updatedAt: new Date('2024-01-01T00:00:00.000Z'),
@@ -183,6 +184,26 @@ describe('Category routes (authenticated)', () => {
         },
       });
       expect(mockUpdate).toHaveBeenCalledWith(1, 10, { name: 'Food' });
+    });
+
+    it('returns 200 when order update succeeds', async () => {
+      const updated: ICategory = { ...category, order: 2 };
+      mockUpdate.mockResolvedValue(updated);
+
+      const response = await request(app)
+        .patch('/v1/categories/10')
+        .set(authHeader)
+        .send({ order: 2 });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: 'Category updated successfully',
+        data: {
+          ...serializedCategory,
+          order: 2,
+        },
+      });
+      expect(mockUpdate).toHaveBeenCalledWith(1, 10, { order: 2 });
     });
   });
 

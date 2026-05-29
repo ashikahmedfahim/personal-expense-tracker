@@ -684,6 +684,7 @@ export const CategoryScalarFieldEnum = {
   id: 'id',
   name: 'name',
   flowType: 'flowType',
+  order: 'order',
   userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
