@@ -34,8 +34,8 @@ export class CategoryController extends BaseController implements ICategoryContr
 
   async createCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
-      const value: ICategoryCreateInput = this.categoryValidator.validateCreateCategory(req.body);
-      const category: ICategory = await this.categoryService.create(req.user!.id, value);
+      const validatedData: ICategoryCreateInput = this.categoryValidator.validateCreateCategory(req.body);
+      const category: ICategory = await this.categoryService.create(req.user!.id, validatedData);
       this.created(res, category, 'Category created successfully');
     }, next);
   }
@@ -43,8 +43,8 @@ export class CategoryController extends BaseController implements ICategoryContr
   async updateCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
       const id: number = this.categoryValidator.validateCategoryId(req.params);
-      const value: ICategoryUpdateInput = this.categoryValidator.validateUpdateCategory(req.body);
-      const category: ICategory = await this.categoryService.update(req.user!.id, id, value);
+      const validatedData: ICategoryUpdateInput = this.categoryValidator.validateUpdateCategory(req.body);
+      const category: ICategory = await this.categoryService.update(req.user!.id, id, validatedData);
       this.ok(res, category, 'Category updated successfully');
     }, next);
   }

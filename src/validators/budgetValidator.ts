@@ -27,7 +27,7 @@ export class BudgetValidator extends BaseValidator implements IBudgetValidator {
   }
 
   validateBudgetId(params: unknown): number {
-    const value: { id: number } = this.validate<{ id: number }>(this.budgetIdSchema, params);
-    return value.id;
+    const validatedData: { id: number } = this.validate<{ id: number }>(this.budgetIdSchema, params);
+    return validatedData.id;
   }
 }

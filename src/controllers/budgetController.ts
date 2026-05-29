@@ -15,8 +15,8 @@ export class BudgetController extends BaseController implements IBudgetControlle
 
   async createBudget(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
-      const value: IBudgetCreateInput = this.budgetValidator.validateCreateBudget(req.body);
-      const budget: IBudget = await this.budgetService.create(req.user!.id, value);
+      const validatedData: IBudgetCreateInput = this.budgetValidator.validateCreateBudget(req.body);
+      const budget: IBudget = await this.budgetService.create(req.user!.id, validatedData);
       this.created(res, budget, 'Budget created successfully');
     }, next);
   }
@@ -24,8 +24,8 @@ export class BudgetController extends BaseController implements IBudgetControlle
   async updateBudget(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
       const id: number = this.budgetValidator.validateBudgetId(req.params);
-      const value: IBudgetUpdateInput = this.budgetValidator.validateUpdateBudget(req.body);
-      const budget: IBudget = await this.budgetService.update(req.user!.id, id, value);
+      const validatedData: IBudgetUpdateInput = this.budgetValidator.validateUpdateBudget(req.body);
+      const budget: IBudget = await this.budgetService.update(req.user!.id, id, validatedData);
       this.ok(res, budget, 'Budget updated successfully');
     }, next);
   }
