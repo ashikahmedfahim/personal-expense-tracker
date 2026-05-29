@@ -22,3 +22,10 @@ export interface ICategoryUpdateInput {
   flowType?: FlowType;
   order?: number;
 }
+
+export type ICategoryFieldsUpdate = Omit<ICategoryUpdateInput, 'order'>;
+
+export interface ICategoryOrderUpdate {
+  id: number;
+  order: number;
+}

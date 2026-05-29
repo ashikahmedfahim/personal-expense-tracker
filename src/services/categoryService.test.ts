@@ -17,6 +17,16 @@ const category: ICategory = {
   updatedAt: new Date('2024-01-01T00:00:00.000Z'),
 };
 
+const secondCategory: ICategory = {
+  id: 11,
+  name: 'Transport',
+  flowType: FlowType.OUTFLOW,
+  order: 2,
+  userId,
+  createdAt: new Date('2024-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+};
+
 const createInput: ICategoryCreateInput = {
   name: 'Groceries',
   flowType: FlowType.OUTFLOW,
@@ -36,8 +46,10 @@ describe('CategoryService', () => {
     categoryRepository = {
       findAllByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
+      getLastOrderByUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateOrders: vi.fn(),
       delete: vi.fn(),
     };
 
@@ -74,42 +86,64 @@ describe('CategoryService', () => {
   });
 
   describe('create', () => {
-    it('creates a category for the user', async () => {
-      vi.mocked(categoryRepository.create).mockResolvedValue(category);
+    it('assigns the next order per user when creating', async () => {
+      vi.mocked(categoryRepository.getLastOrderByUserId).mockResolvedValue(1);
+      vi.mocked(categoryRepository.create).mockResolvedValue(secondCategory);
 
       const result: ICategory = await categoryService.create(userId, createInput);
 
-      expect(categoryRepository.create).toHaveBeenCalledWith(userId, createInput);
-      expect(result).toEqual(category);
+      expect(categoryRepository.getLastOrderByUserId).toHaveBeenCalledWith(userId);
+      expect(categoryRepository.create).toHaveBeenCalledWith(userId, createInput, 2);
+      expect(result).toEqual(secondCategory);
+    });
+
+    it('starts at order 1 for the first category', async () => {
+      vi.mocked(categoryRepository.getLastOrderByUserId).mockResolvedValue(0);
+      vi.mocked(categoryRepository.create).mockResolvedValue(category);
+
+      await categoryService.create(userId, createInput);
+
+      expect(categoryRepository.create).toHaveBeenCalledWith(userId, createInput, 1);
     });
   });
 
   describe('update', () => {
-    it('updates category order', async () => {
-      const updated: ICategory = { ...category, order: 2 };
-      vi.mocked(categoryRepository.update).mockResolvedValue(updated);
+    it('reorders categories when order is updated', async () => {
+      vi.mocked(categoryRepository.findByIdAndUserId)
+        .mockResolvedValueOnce(secondCategory)
+        .mockResolvedValueOnce({ ...secondCategory, order: 1 });
+      vi.mocked(categoryRepository.findAllByUserId).mockResolvedValue([category, secondCategory]);
 
-      const result: ICategory = await categoryService.update(userId, category.id, { order: 2 });
+      const result: ICategory = await categoryService.update(userId, secondCategory.id, { order: 1 });
 
-      expect(categoryRepository.update).toHaveBeenCalledWith(category.id, userId, { order: 2 });
-      expect(result).toEqual(updated);
+      expect(categoryRepository.updateOrders).toHaveBeenCalledWith([
+        { id: secondCategory.id, order: 1 },
+        { id: category.id, order: 2 },
+      ]);
+      expect(categoryRepository.update).not.toHaveBeenCalled();
+      expect(result.order).toBe(1);
     });
 
-    it('throws when category is not found', async () => {
-      vi.mocked(categoryRepository.update).mockResolvedValue(null);
-
-      await expect(categoryService.update(userId, category.id, updateInput)).rejects.toEqual(
-        new AppError(404, 'Category not found'),
-      );
-    });
-
-    it('returns the updated category', async () => {
+    it('updates fields without reordering when order is omitted', async () => {
       const updated: ICategory = { ...category, name: 'Food' };
+      vi.mocked(categoryRepository.findByIdAndUserId)
+        .mockResolvedValueOnce(category)
+        .mockResolvedValueOnce(updated);
       vi.mocked(categoryRepository.update).mockResolvedValue(updated);
 
       const result: ICategory = await categoryService.update(userId, category.id, updateInput);
 
+      expect(categoryRepository.update).toHaveBeenCalledWith(category.id, userId, updateInput);
+      expect(categoryRepository.updateOrders).not.toHaveBeenCalled();
       expect(result).toEqual(updated);
+    });
+
+    it('throws when category is not found', async () => {
+      vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(null);
+
+      await expect(categoryService.update(userId, category.id, updateInput)).rejects.toEqual(
+        new AppError(404, 'Category not found'),
+      );
     });
   });
 
@@ -122,10 +156,14 @@ describe('CategoryService', () => {
       );
     });
 
-    it('deletes the category when it exists', async () => {
+    it('deletes the category and compacts remaining orders', async () => {
       vi.mocked(categoryRepository.delete).mockResolvedValue(category);
+      vi.mocked(categoryRepository.findAllByUserId).mockResolvedValue([secondCategory]);
 
       await expect(categoryService.delete(userId, category.id)).resolves.toBeUndefined();
+
+      expect(categoryRepository.delete).toHaveBeenCalledWith(category.id, userId);
+      expect(categoryRepository.updateOrders).toHaveBeenCalledWith([{ id: secondCategory.id, order: 1 }]);
     });
   });
 });

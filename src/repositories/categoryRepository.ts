@@ -1,5 +1,10 @@
 import type { PrismaClient } from '../generated/prisma/client.js';
-import type { ICategory, ICategoryCreateInput, ICategoryUpdateInput } from '../interfaces/Category.js';
+import type {
+  ICategory,
+  ICategoryCreateInput,
+  ICategoryFieldsUpdate,
+  ICategoryOrderUpdate,
+} from '../interfaces/Category.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
 
 export class CategoryRepository implements ICategoryRepository {
@@ -20,8 +25,15 @@ export class CategoryRepository implements ICategoryRepository {
     return response;
   }
 
-  async create(userId: number, data: ICategoryCreateInput): Promise<ICategory> {
-    const order: number = await this.getNextOrder(userId);
+  async getLastOrderByUserId(userId: number): Promise<number> {
+    const result = await this.db.category.aggregate({
+      where: { userId },
+      _max: { order: true },
+    });
+    return result._max.order ?? 0;
+  }
+
+  async create(userId: number, data: ICategoryCreateInput, order: number): Promise<ICategory> {
     const response: ICategory = await this.db.category.create({
       data: {
         ...data,
@@ -32,26 +44,36 @@ export class CategoryRepository implements ICategoryRepository {
     return response;
   }
 
-  async update(id: number, userId: number, data: ICategoryUpdateInput): Promise<ICategory | null> {
+  async update(id: number, userId: number, data: ICategoryFieldsUpdate): Promise<ICategory | null> {
     const existing: ICategory | null = await this.findByIdAndUserId(id, userId);
     if (!existing) {
       return null;
     }
 
-    const { order, ...rest } = data;
-
-    if (order !== undefined) {
-      await this.reorder(userId, id, order);
+    if (Object.keys(data).length === 0) {
+      return existing;
     }
 
-    if (Object.keys(rest).length > 0) {
-      await this.db.category.update({
-        where: { id },
-        data: rest,
-      });
+    const response: ICategory = await this.db.category.update({
+      where: { id },
+      data,
+    });
+    return response;
+  }
+
+  async updateOrders(orders: ICategoryOrderUpdate[]): Promise<void> {
+    if (orders.length === 0) {
+      return;
     }
 
-    return this.findByIdAndUserId(id, userId);
+    await this.db.$transaction(
+      orders.map(({ id, order }) =>
+        this.db.category.update({
+          where: { id },
+          data: { order },
+        }),
+      ),
+    );
   }
 
   async delete(id: number, userId: number): Promise<ICategory | null> {
@@ -63,61 +85,6 @@ export class CategoryRepository implements ICategoryRepository {
     const response: ICategory = await this.db.category.delete({
       where: { id },
     });
-
-    await this.compactOrders(userId);
     return response;
-  }
-
-  private async getNextOrder(userId: number): Promise<number> {
-    const result = await this.db.category.aggregate({
-      where: { userId },
-      _max: { order: true },
-    });
-    return (result._max.order ?? 0) + 1;
-  }
-
-  private async reorder(userId: number, categoryId: number, newOrder: number): Promise<void> {
-    const categories: ICategory[] = await this.db.category.findMany({
-      where: { userId },
-      orderBy: { order: 'asc' },
-    });
-
-    const currentIndex: number = categories.findIndex((category) => category.id === categoryId);
-    if (currentIndex === -1) {
-      return;
-    }
-
-    const [moved] = categories.splice(currentIndex, 1);
-    if (!moved) {
-      return;
-    }
-
-    const targetIndex: number = Math.min(Math.max(newOrder - 1, 0), categories.length);
-    categories.splice(targetIndex, 0, moved);
-
-    await this.db.$transaction(
-      categories.map((category, index) =>
-        this.db.category.update({
-          where: { id: category.id },
-          data: { order: index + 1 },
-        }),
-      ),
-    );
-  }
-
-  private async compactOrders(userId: number): Promise<void> {
-    const categories: ICategory[] = await this.db.category.findMany({
-      where: { userId },
-      orderBy: { order: 'asc' },
-    });
-
-    await this.db.$transaction(
-      categories.map((category, index) =>
-        this.db.category.update({
-          where: { id: category.id },
-          data: { order: index + 1 },
-        }),
-      ),
-    );
   }
 }
