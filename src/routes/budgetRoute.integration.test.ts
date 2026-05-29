@@ -5,6 +5,7 @@ import type { IBudget } from '../interfaces/Budget.js';
 import { JWT } from '../utils/JWT.js';
 
 const mockCreate = vi.fn();
+const mockUpdate = vi.fn();
 
 vi.mock('../database/index.js', () => ({
   SQLDatabase: {
@@ -22,6 +23,7 @@ vi.mock('../services/budgetService.js', () => ({
   BudgetService: vi.fn(function BudgetService() {
     return {
       create: mockCreate,
+      update: mockUpdate,
     };
   }),
 }));
@@ -94,6 +96,39 @@ describe('Budget routes (authenticated)', () => {
         data: serializedBudget,
       });
       expect(mockCreate).toHaveBeenCalledWith(1, validCreateBody);
+    });
+  });
+
+  describe('PATCH /v1/budgets/:id', () => {
+    it('returns 400 when the request body fails validation', async () => {
+      const response = await request(app)
+        .patch('/v1/budgets/1')
+        .set(authHeader)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message');
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
+    it('returns 200 when update succeeds', async () => {
+      const updated: IBudget = { ...budget, amount: 750 };
+      mockUpdate.mockResolvedValue(updated);
+
+      const response = await request(app)
+        .patch('/v1/budgets/1')
+        .set(authHeader)
+        .send({ amount: 750 });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: 'Budget updated successfully',
+        data: {
+          ...serializedBudget,
+          amount: 750,
+        },
+      });
+      expect(mockUpdate).toHaveBeenCalledWith(1, 1, { amount: 750 });
     });
   });
 });

@@ -5,6 +5,13 @@ import type { IBudgetRepository } from '../interfaces/repositories/IBudgetReposi
 export class BudgetRepository implements IBudgetRepository {
   constructor(private readonly db: PrismaClient) {}
 
+  async findByIdAndUserId(id: number, userId: number): Promise<IBudget | null> {
+    const response: IBudget | null = await this.db.budget.findFirst({
+      where: { id, userId },
+    });
+    return response;
+  }
+
   async findByCategoryIdAndUserIdInMonth(
     userId: number,
     categoryId: number,
@@ -32,6 +39,19 @@ export class BudgetRepository implements IBudgetRepository {
         userId,
         date,
       },
+    });
+    return response;
+  }
+
+  async update(id: number, userId: number, amount: number): Promise<IBudget | null> {
+    const existing: IBudget | null = await this.findByIdAndUserId(id, userId);
+    if (!existing) {
+      return null;
+    }
+
+    const response: IBudget = await this.db.budget.update({
+      where: { id },
+      data: { amount },
     });
     return response;
   }

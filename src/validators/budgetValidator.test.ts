@@ -30,4 +30,31 @@ describe('BudgetValidator', () => {
       }),
     ).toThrow();
   });
+
+  it('validates update budget input', () => {
+    const result = budgetValidator.validateUpdateBudget({ amount: 750 });
+
+    expect(result).toEqual({ amount: 750 });
+  });
+
+  it('rejects update input without amount', () => {
+    expect(() => budgetValidator.validateUpdateBudget({})).toThrow();
+  });
+
+  it('strips fields other than amount from update body', () => {
+    const result = budgetValidator.validateUpdateBudget({
+      amount: 750,
+      categoryId: 3,
+      date: '2024-06-01T00:00:00.000Z',
+    });
+
+    expect(result).toEqual({ amount: 750 });
+    expect(result).not.toHaveProperty('categoryId');
+  });
+
+  it('validates budget id param', () => {
+    const id: number = budgetValidator.validateBudgetId({ id: '5' });
+
+    expect(id).toBe(5);
+  });
 });
