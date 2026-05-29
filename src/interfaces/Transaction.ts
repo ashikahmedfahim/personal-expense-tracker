@@ -1,6 +1,6 @@
-import type { TransactionStatus } from '../generated/prisma/enums.js';
+import type { FlowType, TransactionStatus } from '../generated/prisma/enums.js';
 
-export type { TransactionStatus };
+export type { FlowType, TransactionStatus };
 
 export interface ITransaction {
   id: number;
@@ -29,4 +29,33 @@ export interface ITransactionUpdateInput {
   categoryId?: number;
   description?: string | null;
   date?: Date;
+}
+
+export interface ICurrentMonthTransaction {
+  id: number;
+  title: string;
+  amount: number;
+  description: string | null;
+  date: Date;
+  status: TransactionStatus;
+  categoryId: number;
+  userId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICurrentMonthCategoryWithTransactions {
+  id: number;
+  name: string;
+  flowType: FlowType;
+  transactions: ICurrentMonthTransaction[];
+}
+
+export interface ITransactionsByCategory {
+  category: ICurrentMonthCategoryWithTransactions;
+}
+
+export interface ITransactionWithCategory {
+  transaction: ICurrentMonthTransaction;
+  category: Pick<ICurrentMonthCategoryWithTransactions, 'id' | 'name' | 'flowType'>;
 }

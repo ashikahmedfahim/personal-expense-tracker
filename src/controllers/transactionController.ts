@@ -5,6 +5,7 @@ import type {
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
+  ITransactionsByCategory,
 } from '../interfaces/Transaction.js';
 import type { ITransactionValidator } from '../interfaces/validators/ITransactionValidator.js';
 import { BaseController } from './baseController.js';
@@ -21,6 +22,13 @@ export class TransactionController extends BaseController implements ITransactio
     await this.handleRequest(async () => {
       const transactions: ITransaction[] = await this.transactionService.listRecent(req.user!.id);
       this.ok(res, transactions);
+    }, next);
+  }
+
+  async listCurrentMonthTransactions(req: Request, res: Response, next: NextFunction): Promise<void> {
+    await this.handleRequest(async () => {
+      const groups: ITransactionsByCategory[] = await this.transactionService.listCurrentMonth(req.user!.id);
+      this.ok(res, groups);
     }, next);
   }
 

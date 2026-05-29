@@ -4,11 +4,15 @@ import type {
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
+  ITransactionsByCategory,
+  ITransactionWithCategory,
 } from '../interfaces/Transaction.js';
 import type { ITransactionService } from '../interfaces/services/ITransactionService.js';
+import { getCurrentMonthUtcRange } from '../utils/date.js';
 import { AppError } from '../utils/errors.js';
 
 const RECENT_TRANSACTION_LIMIT = 10;
+const CURRENT_MONTH_TRANSACTION_LIMIT = 20;
 
 export class TransactionService implements ITransactionService {
   constructor(
@@ -22,6 +26,40 @@ export class TransactionService implements ITransactionService {
       RECENT_TRANSACTION_LIMIT,
     );
     return transactions;
+  }
+
+  async listCurrentMonth(userId: number): Promise<ITransactionsByCategory[]> {
+    const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange();
+    const items: ITransactionWithCategory[] = await this.transactionRepository.findRecentInDateRangeByUserId(
+      userId,
+      start,
+      end,
+      CURRENT_MONTH_TRANSACTION_LIMIT,
+    );
+    return this.groupByCategory(items);
+  }
+
+  private groupByCategory(items: ITransactionWithCategory[]): ITransactionsByCategory[] {
+    const groups = new Map<number, ITransactionsByCategory>();
+
+    for (const item of items) {
+      const existing: ITransactionsByCategory | undefined = groups.get(item.category.id);
+      if (existing) {
+        existing.category.transactions.push(item.transaction);
+        continue;
+      }
+
+      groups.set(item.category.id, {
+        category: {
+          id: item.category.id,
+          name: item.category.name,
+          flowType: item.category.flowType,
+          transactions: [item.transaction],
+        },
+      });
+    }
+
+    return [...groups.values()].sort((a, b) => a.category.name.localeCompare(b.category.name));
   }
 
   async create(userId: number, data: ITransactionCreateInput): Promise<ITransaction> {

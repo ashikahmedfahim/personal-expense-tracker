@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { TransactionStatus } from '../generated/prisma/enums.js';
-import type { ITransaction } from '../interfaces/Transaction.js';
+import { FlowType, TransactionStatus } from '../generated/prisma/enums.js';
+import type { ITransaction, ITransactionsByCategory } from '../interfaces/Transaction.js';
 import { JWT } from '../utils/JWT.js';
 
 const mockListRecent = vi.fn();
+const mockListCurrentMonth = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
@@ -26,6 +27,7 @@ vi.mock('../services/transactionService.js', () => ({
   TransactionService: vi.fn(function TransactionService() {
     return {
       listRecent: mockListRecent,
+      listCurrentMonth: mockListCurrentMonth,
       create: mockCreate,
       update: mockUpdate,
       delete: mockDelete,
@@ -62,6 +64,28 @@ const serializedTransaction = {
   createdAt: transaction.createdAt.toISOString(),
   updatedAt: transaction.updatedAt.toISOString(),
 };
+
+const groupedCurrentMonth: ITransactionsByCategory[] = [
+  {
+    category: {
+      id: 3,
+      name: 'Food',
+      flowType: FlowType.OUTFLOW,
+      transactions: [transaction],
+    },
+  },
+];
+
+const serializedGroupedCurrentMonth = [
+  {
+    category: {
+      id: 3,
+      name: 'Food',
+      flowType: FlowType.OUTFLOW,
+      transactions: [serializedTransaction],
+    },
+  },
+];
 
 describe('Transaction routes (authenticated)', () => {
   const app = createApp();
@@ -108,6 +132,23 @@ describe('Transaction routes (authenticated)', () => {
         data: [serializedTransaction],
       });
       expect(mockListRecent).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('GET /v1/transactions/current-month', () => {
+    it('returns 200 with current month transactions grouped by category', async () => {
+      mockListCurrentMonth.mockResolvedValue(groupedCurrentMonth);
+
+      const response = await request(app)
+        .get('/v1/transactions/current-month')
+        .set(authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: null,
+        data: serializedGroupedCurrentMonth,
+      });
+      expect(mockListCurrentMonth).toHaveBeenCalledWith(1);
     });
   });
 
