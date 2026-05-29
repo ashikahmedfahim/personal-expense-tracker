@@ -16,16 +16,16 @@ export class UserController extends BaseController implements IUserController {
 
   async createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
-      const value: IUserCreateInput = this.userValidator.validateCreateUser(req.body);
-      const user: IUserResponse = await this.userService.create(value);
+      const validatedData: IUserCreateInput = this.userValidator.validateCreateUser(req.body);
+      const user: IUserResponse = await this.userService.create(validatedData);
       this.created(res, user, 'User created successfully');
     }, next);
   }
 
   async loginUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
-      const value: IUserLoginInput = this.userValidator.validateLoginUser(req.body);
-      const token: string = await this.userService.login(value);
+      const validatedData: IUserLoginInput = this.userValidator.validateLoginUser(req.body);
+      const token: string = await this.userService.login(validatedData);
       this.ok(res, token);
     }, next);
   }

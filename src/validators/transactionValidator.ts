@@ -33,7 +33,7 @@ export class TransactionValidator extends BaseValidator implements ITransactionV
   }
 
   validateTransactionId(params: unknown): number {
-    const value: { id: number } = this.validate<{ id: number }>(this.transactionIdSchema, params);
-    return value.id;
+    const validatedData: { id: number } = this.validate<{ id: number }>(this.transactionIdSchema, params);
+    return validatedData.id;
   }
 }

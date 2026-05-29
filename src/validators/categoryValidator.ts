@@ -31,7 +31,7 @@ export class CategoryValidator extends BaseValidator implements ICategoryValidat
   }
 
   validateCategoryId(params: unknown): number {
-    const value: { id: number } = this.validate<{ id: number }>(this.categoryIdSchema, params);
-    return value.id;
+    const validatedData: { id: number } = this.validate<{ id: number }>(this.categoryIdSchema, params);
+    return validatedData.id;
   }
 }

@@ -34,8 +34,8 @@ export class TransactionController extends BaseController implements ITransactio
 
   async createTransaction(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
-      const value: ITransactionCreateInput = this.transactionValidator.validateCreateTransaction(req.body);
-      const transaction: ITransaction = await this.transactionService.create(req.user!.id, value);
+      const validatedData: ITransactionCreateInput = this.transactionValidator.validateCreateTransaction(req.body);
+      const transaction: ITransaction = await this.transactionService.create(req.user!.id, validatedData);
       this.created(res, transaction, 'Transaction created successfully');
     }, next);
   }
@@ -43,8 +43,8 @@ export class TransactionController extends BaseController implements ITransactio
   async updateTransaction(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
       const id: number = this.transactionValidator.validateTransactionId(req.params);
-      const value: ITransactionUpdateInput = this.transactionValidator.validateUpdateTransaction(req.body);
-      const transaction: ITransaction = await this.transactionService.update(req.user!.id, id, value);
+      const validatedData: ITransactionUpdateInput = this.transactionValidator.validateUpdateTransaction(req.body);
+      const transaction: ITransaction = await this.transactionService.update(req.user!.id, id, validatedData);
       this.ok(res, transaction, 'Transaction updated successfully');
     }, next);
   }
