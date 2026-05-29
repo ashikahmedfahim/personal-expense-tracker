@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextFunction, Request, Response } from 'express';
 import { TransactionStatus } from '../generated/prisma/enums.js';
 import type { IRequestUser } from '../interfaces/auth.js';
+import { FlowType } from '../generated/prisma/enums.js';
 import type {
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
+  ITransactionsByCategory,
 } from '../interfaces/Transaction.js';
 import type { ITransactionService } from '../interfaces/services/ITransactionService.js';
 import type { ITransactionValidator } from '../interfaces/validators/ITransactionValidator.js';
@@ -56,6 +58,7 @@ describe('TransactionController', () => {
   beforeEach(() => {
     transactionService = {
       listRecent: vi.fn(),
+      listCurrentMonth: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -81,6 +84,28 @@ describe('TransactionController', () => {
     expect(transactionService.listRecent).toHaveBeenCalledWith(authenticatedUser.id);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ message: null, data: [transaction] });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('lists current month transactions grouped by category', async () => {
+    const grouped: ITransactionsByCategory[] = [
+      {
+        category: {
+          id: 3,
+          name: 'Food',
+          flowType: FlowType.OUTFLOW,
+          transactions: [transaction],
+        },
+      },
+    ];
+    vi.mocked(transactionService.listCurrentMonth).mockResolvedValue(grouped);
+    const req: Request = createRequest();
+
+    await transactionController.listCurrentMonthTransactions(req, res, next);
+
+    expect(transactionService.listCurrentMonth).toHaveBeenCalledWith(authenticatedUser.id);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ message: null, data: grouped });
     expect(next).not.toHaveBeenCalled();
   });
 

@@ -4,6 +4,7 @@ import type {
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
+  ITransactionWithCategory,
 } from '../interfaces/Transaction.js';
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 
@@ -16,6 +17,50 @@ export class TransactionRepository implements ITransactionRepository {
       orderBy: [{ date: 'desc' }, { id: 'desc' }],
       take: limit,
     });
+    return response;
+  }
+
+  async findRecentInDateRangeByUserId(
+    userId: number,
+    start: Date,
+    end: Date,
+    limit: number,
+  ): Promise<ITransactionWithCategory[]> {
+    const rows = await this.db.transaction.findMany({
+      where: {
+        userId,
+        date: {
+          gte: start,
+          lte: end,
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        amount: true,
+        description: true,
+        date: true,
+        status: true,
+        categoryId: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            flowType: true,
+          },
+        },
+      },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
+      take: limit,
+    });
+
+    const response: ITransactionWithCategory[] = rows.map(({ category, ...transaction }) => ({
+      transaction,
+      category,
+    }));
     return response;
   }
 

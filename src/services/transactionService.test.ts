@@ -7,6 +7,7 @@ import type {
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
+  ITransactionsByCategory,
 } from '../interfaces/Transaction.js';
 import { AppError } from '../utils/errors.js';
 import { TransactionService } from './transactionService.js';
@@ -56,6 +57,7 @@ describe('TransactionService', () => {
 
     transactionRepository = {
       findRecentByUserId: vi.fn(),
+      findRecentInDateRangeByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -81,6 +83,60 @@ describe('TransactionService', () => {
 
       expect(transactionRepository.findRecentByUserId).toHaveBeenCalledWith(userId, 10);
       expect(result).toEqual([transaction]);
+    });
+  });
+
+  describe('listCurrentMonth', () => {
+    const foodCategory = {
+      id: category.id,
+      name: category.name,
+      flowType: category.flowType,
+    };
+
+    const transportCategory = {
+      id: 5,
+      name: 'Transport',
+      flowType: FlowType.OUTFLOW,
+    };
+
+    const transportTransaction: ITransaction = {
+      ...transaction,
+      id: 21,
+      title: 'Bus',
+      categoryId: transportCategory.id,
+    };
+
+    it('returns up to 20 current-month transactions nested under each category', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-06-15T12:00:00.000Z'));
+      vi.mocked(transactionRepository.findRecentInDateRangeByUserId).mockResolvedValue([
+        { transaction: transportTransaction, category: transportCategory },
+        { transaction, category: foodCategory },
+      ]);
+
+      const result: ITransactionsByCategory[] = await transactionService.listCurrentMonth(userId);
+
+      expect(transactionRepository.findRecentInDateRangeByUserId).toHaveBeenCalledWith(
+        userId,
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-06-30T23:59:59.999Z'),
+        20,
+      );
+      expect(result).toEqual([
+        {
+          category: {
+            ...foodCategory,
+            transactions: [transaction],
+          },
+        },
+        {
+          category: {
+            ...transportCategory,
+            transactions: [transportTransaction],
+          },
+        },
+      ]);
+      vi.useRealTimers();
     });
   });
 
