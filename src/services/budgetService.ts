@@ -4,6 +4,8 @@ import type {
   IBudgetCreateInput,
   IBudgetUpdateInput,
   ICurrentMonthBudgetOverview,
+  IOverallBudgetAllocation,
+  IOverallBudgetView,
 } from '../interfaces/Budget.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
 import type { IBudgetRepository } from '../interfaces/repositories/IBudgetRepository.js';
@@ -25,10 +27,6 @@ export class BudgetService implements IBudgetService {
       throw new AppError(404, 'Category not found');
     }
 
-    if (category.flowType !== FlowType.OUTFLOW) {
-      throw new AppError(400, 'Only outflow categories can have budgets');
-    }
-
     const referenceDate: Date = data.date ?? new Date();
     const monthStart: Date = normalizeToMonthStartUtc(referenceDate);
     const { start, end }: { start: Date; end: Date } = getMonthUtcRange(referenceDate);
@@ -42,6 +40,8 @@ export class BudgetService implements IBudgetService {
     if (existing) {
       throw new AppError(409, 'Budget already exists for this category in this month');
     }
+
+    await this.ensureNonNegativeNetBalance(userId, start, end, category.flowType, data.amount);
 
     const budget: IBudget = await this.budgetRepository.create(
       userId,
@@ -92,7 +92,55 @@ export class BudgetService implements IBudgetService {
     };
   }
 
+  async getCurrentMonthOverall(userId: number): Promise<IOverallBudgetView> {
+    const referenceDate: Date = new Date();
+    const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange(referenceDate);
+    const budgetsWithCategories = await this.budgetRepository.findAllByUserIdInMonth(userId, start, end);
+
+    const income: IOverallBudgetAllocation[] = [];
+    const allocations: IOverallBudgetAllocation[] = [];
+
+    for (const { budget, category } of budgetsWithCategories) {
+      const item: IOverallBudgetAllocation = {
+        category,
+        amount: budget.amount,
+      };
+
+      if (category.flowType === FlowType.INFLOW) {
+        income.push(item);
+        continue;
+      }
+
+      allocations.push(item);
+    }
+
+    const totalIncome: number = income.reduce((sum, item) => sum + item.amount, 0);
+    const totalAllocated: number = allocations.reduce((sum, item) => sum + item.amount, 0);
+
+    return {
+      month: formatUtcMonthKey(referenceDate),
+      totalIncome,
+      totalAllocated,
+      netBalance: totalIncome - totalAllocated,
+      income,
+      allocations,
+    };
+  }
+
   async update(userId: number, id: number, data: IBudgetUpdateInput): Promise<IBudget> {
+    const existing: IBudget | null = await this.budgetRepository.findByIdAndUserId(id, userId);
+    if (!existing) {
+      throw new AppError(404, 'Budget not found');
+    }
+
+    const category = await this.categoryRepository.findByIdAndUserId(existing.categoryId, userId);
+    if (!category) {
+      throw new AppError(404, 'Category not found');
+    }
+
+    const { start, end }: { start: Date; end: Date } = getMonthUtcRange(existing.date);
+    await this.ensureNonNegativeNetBalance(userId, start, end, category.flowType, data.amount, existing.id);
+
     const budget: IBudget | null = await this.budgetRepository.update(id, userId, data.amount);
     if (!budget) {
       throw new AppError(404, 'Budget not found');
@@ -105,5 +153,51 @@ export class BudgetService implements IBudgetService {
     if (!budget) {
       throw new AppError(404, 'Budget not found');
     }
+  }
+
+  private async ensureNonNegativeNetBalance(
+    userId: number,
+    start: Date,
+    end: Date,
+    flowType: FlowType,
+    amount: number,
+    excludeBudgetId?: number,
+  ): Promise<void> {
+    const budgetsWithCategories = await this.budgetRepository.findAllByUserIdInMonth(userId, start, end);
+    const netBalance: number = this.calculateNetBalance(budgetsWithCategories, flowType, amount, excludeBudgetId);
+
+    if (netBalance < 0) {
+      throw new AppError(400, 'Budget allocation would result in a negative net balance');
+    }
+  }
+
+  private calculateNetBalance(
+    budgetsWithCategories: Array<{ budget: IBudget; category: { flowType: FlowType } }>,
+    flowType: FlowType,
+    amount: number,
+    excludeBudgetId?: number,
+  ): number {
+    let totalIncome = 0;
+    let totalAllocated = 0;
+
+    for (const { budget, category } of budgetsWithCategories) {
+      if (excludeBudgetId !== undefined && budget.id === excludeBudgetId) {
+        continue;
+      }
+
+      if (category.flowType === FlowType.INFLOW) {
+        totalIncome += budget.amount;
+      } else {
+        totalAllocated += budget.amount;
+      }
+    }
+
+    if (flowType === FlowType.INFLOW) {
+      totalIncome += amount;
+    } else {
+      totalAllocated += amount;
+    }
+
+    return totalIncome - totalAllocated;
   }
 }

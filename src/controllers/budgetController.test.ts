@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextFunction, Request, Response } from 'express';
 import { FlowType } from '../generated/prisma/enums.js';
 import type { IRequestUser } from '../interfaces/auth.js';
-import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput, ICurrentMonthBudgetOverview } from '../interfaces/Budget.js';
+import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput, ICurrentMonthBudgetOverview, IOverallBudgetView } from '../interfaces/Budget.js';
 import type { IBudgetService } from '../interfaces/services/IBudgetService.js';
 import type { IBudgetValidator } from '../interfaces/validators/IBudgetValidator.js';
 import { BudgetController } from './budgetController.js';
@@ -50,6 +50,7 @@ describe('BudgetController', () => {
     budgetService = {
       create: vi.fn(),
       getCurrentMonthOverview: vi.fn(),
+      getCurrentMonthOverall: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     };
@@ -112,6 +113,46 @@ describe('BudgetController', () => {
     expect(budgetService.getCurrentMonthOverview).toHaveBeenCalledWith(authenticatedUser.id);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ message: null, data: overview });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns current month overall budget allocation', async () => {
+    const overall: IOverallBudgetView = {
+      month: '2024-06',
+      totalIncome: 100,
+      totalAllocated: 95,
+      netBalance: 5,
+      income: [
+        {
+          category: {
+            id: 4,
+            name: 'Salary',
+            flowType: FlowType.INFLOW,
+            order: 0,
+          },
+          amount: 100,
+        },
+      ],
+      allocations: [
+        {
+          category: {
+            id: 3,
+            name: 'Grocery',
+            flowType: FlowType.OUTFLOW,
+            order: 1,
+          },
+          amount: 20,
+        },
+      ],
+    };
+    vi.mocked(budgetService.getCurrentMonthOverall).mockResolvedValue(overall);
+    const req: Request = createRequest();
+
+    await budgetController.getCurrentMonthOverall(req, res, next);
+
+    expect(budgetService.getCurrentMonthOverall).toHaveBeenCalledWith(authenticatedUser.id);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ message: null, data: overall });
     expect(next).not.toHaveBeenCalled();
   });
 

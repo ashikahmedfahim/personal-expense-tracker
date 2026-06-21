@@ -50,3 +50,17 @@ export interface ICurrentMonthBudgetOverview {
   summary: ICurrentMonthBudgetSummary;
   budgets: ICurrentMonthBudgetItem[];
 }
+
+export interface IOverallBudgetAllocation {
+  category: IBudgetCategorySummary;
+  amount: number;
+}
+
+export interface IOverallBudgetView {
+  month: string;
+  totalIncome: number;
+  totalAllocated: number;
+  netBalance: number;
+  income: IOverallBudgetAllocation[];
+  allocations: IOverallBudgetAllocation[];
+}

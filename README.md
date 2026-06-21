@@ -297,15 +297,17 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/v1/budgets/current-month` | All budgets for the current UTC month with per-category spending |
-| `POST` | `/v1/budgets` | Create monthly budget for an outflow category |
+| `GET` | `/v1/budgets/current-month/overall` | Overall budget plan for the current UTC month (budget amounts only) |
+| `POST` | `/v1/budgets` | Create monthly budget for a category |
 | `PATCH` | `/v1/budgets/:id` | Update budget amount only |
 | `DELETE` | `/v1/budgets/:id` | Delete budget |
 
 **Rules:**
 
 - Budgets are tied to a **category** (`categoryId`).
-- Only **OUTFLOW** categories can have budgets.
+- **INFLOW** budgets represent planned income; **OUTFLOW** budgets represent planned expenses.
 - **One budget per category per UTC month** (duplicate returns `409`).
+- **Net balance** (`total income budgets − total outflow budgets`) must stay **≥ 0** after create or update; otherwise the API returns `400`.
 - Month is derived from optional `date` (defaults to current month); stored as the first day of that month (UTC).
 
 **Create body:**
@@ -384,17 +386,70 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 
 Spending includes **completed** outflow transactions in the current UTC month. Budgets are sorted by category `order`. `remaining` can be negative if spending exceeds the budget.
 
+**Overall budget response shape** — planned income and expense allocation for the current UTC month (uses budget amounts, not spending):
+
 ```json
 {
-  "amount": 750
+  "message": null,
+  "data": {
+    "month": "2024-06",
+    "totalIncome": 100,
+    "totalAllocated": 95,
+    "netBalance": 5,
+    "income": [
+      {
+        "category": {
+          "id": 4,
+          "name": "Salary",
+          "flowType": "INFLOW",
+          "order": 0
+        },
+        "amount": 100
+      }
+    ],
+    "allocations": [
+      {
+        "category": {
+          "id": 3,
+          "name": "Grocery",
+          "flowType": "OUTFLOW",
+          "order": 1
+        },
+        "amount": 20
+      },
+      {
+        "category": {
+          "id": 5,
+          "name": "Rent",
+          "flowType": "OUTFLOW",
+          "order": 2
+        },
+        "amount": 70
+      },
+      {
+        "category": {
+          "id": 6,
+          "name": "Bus",
+          "flowType": "OUTFLOW",
+          "order": 3
+        },
+        "amount": 5
+      }
+    ]
+  }
 }
 ```
+
+- `totalIncome` — sum of **INFLOW** category budgets
+- `totalAllocated` — sum of **OUTFLOW** category budgets
+- `netBalance` — `totalIncome - totalAllocated`
+- `allocations` — expense category budgets sorted by category `order`
 
 ### Common HTTP status codes
 
 | Code | Typical cause |
 |------|----------------|
-| `400` | Validation error or business rule (e.g. inflow category budget) |
+| `400` | Validation error or business rule (e.g. budget limit exceeded) |
 | `401` | Missing/invalid JWT |
 | `404` | Resource not found or not owned by user |
 | `409` | Conflict (duplicate email, duplicate monthly budget) |
