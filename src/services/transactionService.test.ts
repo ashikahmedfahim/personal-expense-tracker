@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowType, TransactionStatus } from '../generated/prisma/enums.js';
 import type { ICategory } from '../interfaces/Category.js';
+import type { IBudget } from '../interfaces/Budget.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
+import type { IBudgetRepository } from '../interfaces/repositories/IBudgetRepository.js';
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 import type {
   IDailyExpenseTotal,
@@ -49,9 +51,20 @@ const transaction: ITransaction = {
   updatedAt: new Date('2024-01-01T00:00:00.000Z'),
 };
 
+const budget: IBudget = {
+  id: 1,
+  amount: 500,
+  date: new Date('2024-06-01T00:00:00.000Z'),
+  categoryId: 3,
+  userId,
+  createdAt: new Date('2024-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+};
+
 describe('TransactionService', () => {
   let transactionRepository: ITransactionRepository;
   let categoryRepository: ICategoryRepository;
+  let budgetRepository: IBudgetRepository;
   let transactionService: TransactionService;
 
   beforeEach(() => {
@@ -77,7 +90,15 @@ describe('TransactionService', () => {
       delete: vi.fn(),
     };
 
-    transactionService = new TransactionService(transactionRepository, categoryRepository);
+    budgetRepository = {
+      findByIdAndUserId: vi.fn(),
+      findByCategoryIdAndUserIdInMonth: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    transactionService = new TransactionService(transactionRepository, categoryRepository, budgetRepository);
   });
 
   describe('listRecent', () => {
@@ -182,28 +203,69 @@ describe('TransactionService', () => {
       expect(transactionRepository.create).not.toHaveBeenCalled();
     });
 
-    it('creates a transaction when category exists', async () => {
+    it('throws when outflow category has no budget for the transaction month', async () => {
+      const input: ITransactionCreateInput = {
+        ...createInput,
+        date: new Date('2024-06-01T10:00:00.000Z'),
+      };
       vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(category);
+      vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(null);
+
+      await expect(transactionService.create(userId, input)).rejects.toEqual(
+        new AppError(400, 'Budget must be created for this category in the transaction month before adding a transaction'),
+      );
+      expect(transactionRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('creates a transaction when outflow category has a budget for the transaction month', async () => {
+      const input: ITransactionCreateInput = {
+        ...createInput,
+        date: new Date('2024-06-01T10:00:00.000Z'),
+      };
+      vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(category);
+      vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(budget);
       vi.mocked(transactionRepository.create).mockResolvedValue(transaction);
 
-      const result: ITransaction = await transactionService.create(userId, createInput);
+      const result: ITransaction = await transactionService.create(userId, input);
 
-      expect(categoryRepository.findByIdAndUserId).toHaveBeenCalledWith(createInput.categoryId, userId);
-      expect(transactionRepository.create).toHaveBeenCalledWith(userId, createInput);
+      expect(budgetRepository.findByCategoryIdAndUserIdInMonth).toHaveBeenCalledWith(
+        userId,
+        category.id,
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-06-30T23:59:59.999Z'),
+      );
+      expect(categoryRepository.findByIdAndUserId).toHaveBeenCalledWith(input.categoryId, userId);
+      expect(transactionRepository.create).toHaveBeenCalledWith(userId, input);
       expect(result).toEqual(transaction);
+    });
+
+    it('creates a transaction for inflow categories without requiring a budget', async () => {
+      const inflowCategory: ICategory = { ...category, id: 7, flowType: FlowType.INFLOW };
+      const inflowInput: ITransactionCreateInput = { ...createInput, categoryId: 7 };
+      const inflowTransaction: ITransaction = { ...transaction, categoryId: 7 };
+
+      vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(inflowCategory);
+      vi.mocked(transactionRepository.create).mockResolvedValue(inflowTransaction);
+
+      const result: ITransaction = await transactionService.create(userId, inflowInput);
+
+      expect(budgetRepository.findByCategoryIdAndUserIdInMonth).not.toHaveBeenCalled();
+      expect(result).toEqual(inflowTransaction);
     });
   });
 
   describe('update', () => {
     it('throws when transaction is not found', async () => {
-      vi.mocked(transactionRepository.update).mockResolvedValue(null);
+      vi.mocked(transactionRepository.findByIdAndUserId).mockResolvedValue(null);
 
       await expect(transactionService.update(userId, transaction.id, updateInput)).rejects.toEqual(
         new AppError(404, 'Transaction not found'),
       );
+      expect(transactionRepository.update).not.toHaveBeenCalled();
     });
 
     it('throws when category is not found', async () => {
+      vi.mocked(transactionRepository.findByIdAndUserId).mockResolvedValue(transaction);
       vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(null);
 
       await expect(
@@ -212,27 +274,51 @@ describe('TransactionService', () => {
       expect(transactionRepository.update).not.toHaveBeenCalled();
     });
 
+    it('throws when changing to an outflow category without a budget for the transaction month', async () => {
+      vi.mocked(transactionRepository.findByIdAndUserId).mockResolvedValue(transaction);
+      vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue({ ...category, id: 5 });
+      vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(null);
+
+      await expect(
+        transactionService.update(userId, transaction.id, { categoryId: 5 }),
+      ).rejects.toEqual(
+        new AppError(400, 'Budget must be created for this category in the transaction month before adding a transaction'),
+      );
+      expect(transactionRepository.update).not.toHaveBeenCalled();
+    });
+
     it('updates a transaction when it exists', async () => {
       const updated: ITransaction = { ...transaction, title: 'Lunch', amount: 12 };
+      vi.mocked(transactionRepository.findByIdAndUserId).mockResolvedValue(transaction);
+      vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(category);
       vi.mocked(transactionRepository.update).mockResolvedValue(updated);
 
       const result: ITransaction = await transactionService.update(userId, transaction.id, updateInput);
 
+      expect(budgetRepository.findByCategoryIdAndUserIdInMonth).not.toHaveBeenCalled();
       expect(transactionRepository.update).toHaveBeenCalledWith(transaction.id, userId, updateInput);
       expect(result).toEqual(updated);
     });
 
-    it('validates category when categoryId is provided', async () => {
+    it('validates category and budget when categoryId is provided', async () => {
       const updated: ITransaction = { ...transaction, categoryId: 5 };
+      vi.mocked(transactionRepository.findByIdAndUserId).mockResolvedValue(transaction);
       vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue({
         ...category,
         id: 5,
       });
+      vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(budget);
       vi.mocked(transactionRepository.update).mockResolvedValue(updated);
 
       const result: ITransaction = await transactionService.update(userId, transaction.id, { categoryId: 5 });
 
       expect(categoryRepository.findByIdAndUserId).toHaveBeenCalledWith(5, userId);
+      expect(budgetRepository.findByCategoryIdAndUserIdInMonth).toHaveBeenCalledWith(
+        userId,
+        5,
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-06-30T23:59:59.999Z'),
+      );
       expect(result).toEqual(updated);
     });
   });

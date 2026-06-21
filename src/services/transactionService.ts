@@ -1,4 +1,6 @@
+import { FlowType } from '../generated/prisma/enums.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
+import type { IBudgetRepository } from '../interfaces/repositories/IBudgetRepository.js';
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 import type {
   IDailyExpenseTotal,
@@ -10,7 +12,7 @@ import type {
   ITransactionWithCategory,
 } from '../interfaces/Transaction.js';
 import type { ITransactionService } from '../interfaces/services/ITransactionService.js';
-import { formatUtcDateKey, getCurrentMonthUtcRange, getUtcDateKeysForMonth } from '../utils/date.js';
+import { formatUtcDateKey, getCurrentMonthUtcRange, getMonthUtcRange, getUtcDateKeysForMonth } from '../utils/date.js';
 import { AppError } from '../utils/errors.js';
 
 const RECENT_TRANSACTION_LIMIT = 10;
@@ -20,6 +22,7 @@ export class TransactionService implements ITransactionService {
   constructor(
     private readonly transactionRepository: ITransactionRepository,
     private readonly categoryRepository: ICategoryRepository,
+    private readonly budgetRepository: IBudgetRepository,
   ) {}
 
   async listRecent(userId: number): Promise<ITransaction[]> {
@@ -89,16 +92,28 @@ export class TransactionService implements ITransactionService {
       throw new AppError(404, 'Category not found');
     }
 
+    const transactionDate: Date = data.date ?? new Date();
+    await this.ensureOutflowBudgetExists(userId, category, transactionDate);
+
     const transaction: ITransaction = await this.transactionRepository.create(userId, data);
     return transaction;
   }
 
   async update(userId: number, id: number, data: ITransactionUpdateInput): Promise<ITransaction> {
-    if (data.categoryId !== undefined) {
-      const category = await this.categoryRepository.findByIdAndUserId(data.categoryId, userId);
-      if (!category) {
-        throw new AppError(404, 'Category not found');
-      }
+    const existing: ITransaction | null = await this.transactionRepository.findByIdAndUserId(id, userId);
+    if (!existing) {
+      throw new AppError(404, 'Transaction not found');
+    }
+
+    const categoryId: number = data.categoryId ?? existing.categoryId;
+    const category = await this.categoryRepository.findByIdAndUserId(categoryId, userId);
+    if (!category) {
+      throw new AppError(404, 'Category not found');
+    }
+
+    const transactionDate: Date = data.date ?? existing.date;
+    if (data.categoryId !== undefined || data.date !== undefined) {
+      await this.ensureOutflowBudgetExists(userId, category, transactionDate);
     }
 
     const transaction: ITransaction | null = await this.transactionRepository.update(id, userId, data);
@@ -112,6 +127,28 @@ export class TransactionService implements ITransactionService {
     const transaction: ITransaction | null = await this.transactionRepository.delete(id, userId);
     if (!transaction) {
       throw new AppError(404, 'Transaction not found');
+    }
+  }
+
+  private async ensureOutflowBudgetExists(
+    userId: number,
+    category: { id: number; flowType: FlowType },
+    referenceDate: Date,
+  ): Promise<void> {
+    if (category.flowType !== FlowType.OUTFLOW) {
+      return;
+    }
+
+    const { start, end }: { start: Date; end: Date } = getMonthUtcRange(referenceDate);
+    const budget = await this.budgetRepository.findByCategoryIdAndUserIdInMonth(
+      userId,
+      category.id,
+      start,
+      end,
+    );
+
+    if (!budget) {
+      throw new AppError(400, 'Budget must be created for this category in the transaction month before adding a transaction');
     }
   }
 }

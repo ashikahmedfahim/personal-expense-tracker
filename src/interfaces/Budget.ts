@@ -1,3 +1,5 @@
+import type { FlowType } from '../generated/prisma/enums.js';
+
 export interface IBudget {
   id: number;
   amount: number;
@@ -16,4 +18,35 @@ export interface IBudgetCreateInput {
 
 export interface IBudgetUpdateInput {
   amount: number;
+}
+
+export interface IBudgetCategorySummary {
+  id: number;
+  name: string;
+  flowType: FlowType;
+  order: number;
+}
+
+export interface IBudgetWithCategory {
+  budget: IBudget;
+  category: IBudgetCategorySummary;
+}
+
+export interface ICurrentMonthBudgetItem {
+  budget: IBudget;
+  category: IBudgetCategorySummary;
+  spent: number;
+  remaining: number;
+}
+
+export interface ICurrentMonthBudgetSummary {
+  totalBudget: number;
+  totalSpent: number;
+  remaining: number;
+}
+
+export interface ICurrentMonthBudgetOverview {
+  month: string;
+  summary: ICurrentMonthBudgetSummary;
+  budgets: ICurrentMonthBudgetItem[];
 }

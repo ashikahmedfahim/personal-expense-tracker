@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextFunction, Request, Response } from 'express';
+import { FlowType } from '../generated/prisma/enums.js';
 import type { IRequestUser } from '../interfaces/auth.js';
-import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput } from '../interfaces/Budget.js';
+import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput, ICurrentMonthBudgetOverview } from '../interfaces/Budget.js';
 import type { IBudgetService } from '../interfaces/services/IBudgetService.js';
 import type { IBudgetValidator } from '../interfaces/validators/IBudgetValidator.js';
 import { BudgetController } from './budgetController.js';
@@ -48,6 +49,7 @@ describe('BudgetController', () => {
   beforeEach(() => {
     budgetService = {
       create: vi.fn(),
+      getCurrentMonthOverview: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     };
@@ -77,6 +79,39 @@ describe('BudgetController', () => {
       message: 'Budget created successfully',
       data: budget,
     });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns current month budget overview', async () => {
+    const overview: ICurrentMonthBudgetOverview = {
+      month: '2024-06',
+      summary: {
+        totalBudget: 500,
+        totalSpent: 320,
+        remaining: 180,
+      },
+      budgets: [
+        {
+          budget,
+          category: {
+            id: 3,
+            name: 'Food',
+            flowType: FlowType.OUTFLOW,
+            order: 1,
+          },
+          spent: 320,
+          remaining: 180,
+        },
+      ],
+    };
+    vi.mocked(budgetService.getCurrentMonthOverview).mockResolvedValue(overview);
+    const req: Request = createRequest();
+
+    await budgetController.getCurrentMonthOverview(req, res, next);
+
+    expect(budgetService.getCurrentMonthOverview).toHaveBeenCalledWith(authenticatedUser.id);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ message: null, data: overview });
     expect(next).not.toHaveBeenCalled();
   });
 

@@ -1,5 +1,5 @@
 import type { PrismaClient } from '../generated/prisma/client.js';
-import type { IBudget, IBudgetCreateInput } from '../interfaces/Budget.js';
+import type { IBudget, IBudgetCreateInput, IBudgetWithCategory } from '../interfaces/Budget.js';
 import type { IBudgetRepository } from '../interfaces/repositories/IBudgetRepository.js';
 
 export class BudgetRepository implements IBudgetRepository {
@@ -28,6 +28,46 @@ export class BudgetRepository implements IBudgetRepository {
         },
       },
     });
+    return response;
+  }
+
+  async findAllByUserIdInMonth(userId: number, start: Date, end: Date): Promise<IBudgetWithCategory[]> {
+    const rows = await this.db.budget.findMany({
+      where: {
+        userId,
+        date: {
+          gte: start,
+          lte: end,
+        },
+      },
+      select: {
+        id: true,
+        amount: true,
+        date: true,
+        categoryId: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            flowType: true,
+            order: true,
+          },
+        },
+      },
+      orderBy: {
+        category: {
+          order: 'asc',
+        },
+      },
+    });
+
+    const response: IBudgetWithCategory[] = rows.map(({ category, ...budget }) => ({
+      budget,
+      category,
+    }));
     return response;
   }
 
