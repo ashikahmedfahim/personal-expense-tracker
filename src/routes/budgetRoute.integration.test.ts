@@ -7,6 +7,7 @@ import { JWT } from '../utils/JWT.js';
 
 const mockCreate = vi.fn();
 const mockGetCurrentMonthOverview = vi.fn();
+const mockGetCurrentMonthOverall = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 
@@ -27,6 +28,7 @@ vi.mock('../services/budgetService.js', () => ({
     return {
       create: mockCreate,
       getCurrentMonthOverview: mockGetCurrentMonthOverview,
+      getCurrentMonthOverall: mockGetCurrentMonthOverall,
       update: mockUpdate,
       delete: mockDelete,
     };
@@ -110,6 +112,51 @@ describe('Budget routes (authenticated)', () => {
         data: overview,
       });
       expect(mockGetCurrentMonthOverview).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('GET /v1/budgets/current-month/overall', () => {
+    it('returns 200 with current month budget allocation using budget amounts only', async () => {
+      const overall = {
+        month: '2024-06',
+        totalIncome: 100,
+        totalAllocated: 95,
+        netBalance: 5,
+        income: [
+          {
+            category: {
+              id: 4,
+              name: 'Salary',
+              flowType: FlowType.INFLOW,
+              order: 0,
+            },
+            amount: 100,
+          },
+        ],
+        allocations: [
+          {
+            category: {
+              id: 3,
+              name: 'Grocery',
+              flowType: FlowType.OUTFLOW,
+              order: 1,
+            },
+            amount: 20,
+          },
+        ],
+      };
+      mockGetCurrentMonthOverall.mockResolvedValue(overall);
+
+      const response = await request(app)
+        .get('/v1/budgets/current-month/overall')
+        .set(authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: null,
+        data: overall,
+      });
+      expect(mockGetCurrentMonthOverall).toHaveBeenCalledWith(1);
     });
   });
 

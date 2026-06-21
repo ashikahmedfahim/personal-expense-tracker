@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 export interface IBudgetController {
   createBudget(req: Request, res: Response, next: NextFunction): Promise<void>;
   getCurrentMonthOverview(req: Request, res: Response, next: NextFunction): Promise<void>;
+  getCurrentMonthOverall(req: Request, res: Response, next: NextFunction): Promise<void>;
   updateBudget(req: Request, res: Response, next: NextFunction): Promise<void>;
   deleteBudget(req: Request, res: Response, next: NextFunction): Promise<void>;
 }
