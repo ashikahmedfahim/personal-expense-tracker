@@ -7,6 +7,7 @@ import { JWT } from '../utils/JWT.js';
 
 const mockListRecent = vi.fn();
 const mockListCurrentMonth = vi.fn();
+const mockGetCurrentMonthDailyTotals = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
@@ -28,6 +29,7 @@ vi.mock('../services/transactionService.js', () => ({
     return {
       listRecent: mockListRecent,
       listCurrentMonth: mockListCurrentMonth,
+      getCurrentMonthDailyTotals: mockGetCurrentMonthDailyTotals,
       create: mockCreate,
       update: mockUpdate,
       delete: mockDelete,
@@ -151,6 +153,27 @@ describe('Transaction routes (authenticated)', () => {
         data: serializedGroupedCurrentMonth,
       });
       expect(mockListCurrentMonth).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('GET /v1/transactions/current-month/daily-totals', () => {
+    it('returns 200 with daily expense totals for the current UTC month', async () => {
+      const dailyTotals = [
+        { date: '2024-06-01', total: 14.5 },
+        { date: '2024-06-02', total: 0 },
+      ];
+      mockGetCurrentMonthDailyTotals.mockResolvedValue(dailyTotals);
+
+      const response = await request(app)
+        .get('/v1/transactions/current-month/daily-totals')
+        .set(authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: null,
+        data: dailyTotals,
+      });
+      expect(mockGetCurrentMonthDailyTotals).toHaveBeenCalledWith(1);
     });
   });
 

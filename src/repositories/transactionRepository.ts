@@ -1,8 +1,9 @@
 import type { PrismaClient } from '../generated/prisma/client.js';
-import { TransactionStatus } from '../generated/prisma/enums.js';
+import { FlowType, TransactionStatus } from '../generated/prisma/enums.js';
 import type {
   ITransaction,
   ITransactionCreateInput,
+  ITransactionDailyAmount,
   ITransactionUpdateInput,
   ITransactionWithCategory,
 } from '../interfaces/Transaction.js';
@@ -62,6 +63,31 @@ export class TransactionRepository implements ITransactionRepository {
       transaction,
       category,
     }));
+    return response;
+  }
+
+  async findOutflowAmountsInDateRangeByUserId(
+    userId: number,
+    start: Date,
+    end: Date,
+  ): Promise<ITransactionDailyAmount[]> {
+    const response: ITransactionDailyAmount[] = await this.db.transaction.findMany({
+      where: {
+        userId,
+        status: TransactionStatus.COMPLETED,
+        date: {
+          gte: start,
+          lte: end,
+        },
+        category: {
+          flowType: FlowType.OUTFLOW,
+        },
+      },
+      select: {
+        date: true,
+        amount: true,
+      },
+    });
     return response;
   }
 

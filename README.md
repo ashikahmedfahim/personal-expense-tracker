@@ -225,6 +225,7 @@ Authorization: Bearer <token>
 |--------|------|-------------|
 | `GET` | `/v1/transactions` | Last 10 transactions (all categories, newest first) |
 | `GET` | `/v1/transactions/current-month` | Up to 20 transactions in the current UTC month, grouped by category |
+| `GET` | `/v1/transactions/current-month/daily-totals` | Total outflow expense per day for the current UTC month (for line charts) |
 | `POST` | `/v1/transactions` | Create transaction (`status` always `COMPLETED`; not accepted in body) |
 | `PATCH` | `/v1/transactions/:id` | Update transaction (partial body) |
 | `DELETE` | `/v1/transactions/:id` | Delete transaction |
@@ -273,6 +274,21 @@ Authorization: Bearer <token>
 ```
 
 Groups are sorted by category `order`. Only the 20 most recent transactions in the month are included (across all categories).
+
+**Daily totals response shape** — one entry per day in the current UTC month (days with no spending have `total: 0`):
+
+```json
+{
+  "message": null,
+  "data": [
+    { "date": "2024-06-01", "total": 14.5 },
+    { "date": "2024-06-02", "total": 0 },
+    { "date": "2024-06-03", "total": 25 }
+  ]
+}
+```
+
+Only **completed** transactions on **OUTFLOW** categories are included. Dates are UTC (`YYYY-MM-DD`).
 
 #### Budgets (`/v1/budgets`)
 
