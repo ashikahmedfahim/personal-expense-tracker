@@ -76,6 +76,7 @@ describe('BudgetService', () => {
       findRecentInDateRangeByUserId: vi.fn(),
       findOutflowAmountsInDateRangeByUserId: vi.fn(),
       sumOutflowByCategoryInDateRangeByUserId: vi.fn(),
+      sumOutflowAmountByCategoryIdInDateRangeByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
