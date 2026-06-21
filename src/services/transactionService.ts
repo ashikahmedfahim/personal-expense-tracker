@@ -12,7 +12,7 @@ import type {
   ITransactionWithCategory,
 } from '../interfaces/Transaction.js';
 import type { ITransactionService } from '../interfaces/services/ITransactionService.js';
-import { formatUtcDateKey, getCurrentMonthUtcRange, getMonthUtcRange, getUtcDateKeysForMonth } from '../utils/date.js';
+import { formatUtcDateKey, formatUtcMonthKey, getCurrentMonthUtcRange, getMonthUtcRange, getUtcDateKeysForMonth } from '../utils/date.js';
 import { AppError } from '../utils/errors.js';
 
 const RECENT_TRANSACTION_LIMIT = 10;
@@ -93,7 +93,7 @@ export class TransactionService implements ITransactionService {
     }
 
     const transactionDate: Date = data.date ?? new Date();
-    await this.ensureOutflowBudgetExists(userId, category, transactionDate);
+    await this.ensureOutflowTransactionWithinBudget(userId, category, transactionDate, data.amount);
 
     const transaction: ITransaction = await this.transactionRepository.create(userId, data);
     return transaction;
@@ -112,8 +112,13 @@ export class TransactionService implements ITransactionService {
     }
 
     const transactionDate: Date = data.date ?? existing.date;
-    if (data.categoryId !== undefined || data.date !== undefined) {
-      await this.ensureOutflowBudgetExists(userId, category, transactionDate);
+    const amount: number = data.amount ?? existing.amount;
+
+    if (
+      category.flowType === FlowType.OUTFLOW &&
+      (data.amount !== undefined || data.categoryId !== undefined || data.date !== undefined)
+    ) {
+      await this.ensureOutflowTransactionWithinBudget(userId, category, transactionDate, amount, existing);
     }
 
     const transaction: ITransaction | null = await this.transactionRepository.update(id, userId, data);
@@ -130,10 +135,12 @@ export class TransactionService implements ITransactionService {
     }
   }
 
-  private async ensureOutflowBudgetExists(
+  private async ensureOutflowTransactionWithinBudget(
     userId: number,
     category: { id: number; flowType: FlowType },
     referenceDate: Date,
+    amount: number,
+    existingTransaction?: ITransaction,
   ): Promise<void> {
     if (category.flowType !== FlowType.OUTFLOW) {
       return;
@@ -149,6 +156,25 @@ export class TransactionService implements ITransactionService {
 
     if (!budget) {
       throw new AppError(400, 'Budget must be created for this category in the transaction month before adding a transaction');
+    }
+
+    const excludeTransactionId: number | undefined =
+      existingTransaction &&
+      existingTransaction.categoryId === category.id &&
+      formatUtcMonthKey(existingTransaction.date) === formatUtcMonthKey(referenceDate)
+        ? existingTransaction.id
+        : undefined;
+
+    const currentSpent: number = await this.transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId(
+      userId,
+      category.id,
+      start,
+      end,
+      excludeTransactionId,
+    );
+
+    if (currentSpent + amount > budget.amount) {
+      throw new AppError(400, 'Transaction would exceed the budget limit for this category in the transaction month');
     }
   }
 }

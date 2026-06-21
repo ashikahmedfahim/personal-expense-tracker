@@ -250,7 +250,7 @@ Authorization: Bearer <token>
 | `description` | Optional |
 | `date` | Optional ISO date; defaults to now |
 
-**Outflow transactions** require a budget for the same category in the transaction's UTC month. Create the budget first (`POST /v1/budgets`); otherwise the API returns `400`. Inflow transactions are not subject to this rule.
+**Outflow transactions** require a budget for the same category in the transaction's UTC month. Create the budget first (`POST /v1/budgets`); otherwise the API returns `400`. The transaction amount plus existing completed spending in that category for the month must not exceed the budget; otherwise the API returns `400`. Inflow transactions are not subject to this rule.
 
 **Update body (at least one field):** `title`, `amount` (> 0), `categoryId`, `description`, `date`.
 

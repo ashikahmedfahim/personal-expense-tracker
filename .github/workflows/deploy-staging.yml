@@ -1,17 +1,19 @@
 name: Deploy Staging
 
+# AWS deploy disabled — restore the push trigger below when ready to auto-deploy again.
 on:
-  push:
-    branches: [dev]
-    paths:
-      - "src/**"
-      - "Dockerfile"
-      - "package.json"
-      - "package-lock.json"
-      - "scripts/docker-prod-entrypoint.sh"
-      - "scripts/ecs-deploy.sh"
-      - "tsconfig.build.json"
-      - "prisma.config.ts"
+  workflow_dispatch:
+  # push:
+  #   branches: [dev]
+  #   paths:
+  #     - "src/**"
+  #     - "Dockerfile"
+  #     - "package.json"
+  #     - "package-lock.json"
+  #     - "scripts/docker-prod-entrypoint.sh"
+  #     - "scripts/ecs-deploy.sh"
+  #     - "tsconfig.build.json"
+  #     - "prisma.config.ts"
 
 permissions:
   id-token: write
@@ -23,6 +25,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: false # AWS deploy disabled — set to true (or remove) when re-enabling
     runs-on: ubuntu-latest
     environment: staging
 
