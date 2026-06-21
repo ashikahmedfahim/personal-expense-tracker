@@ -36,6 +36,8 @@ model Category {
   budgets Budget[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, order, id])
 }
 
 model Transaction {
@@ -51,6 +53,10 @@ model Transaction {
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, date(sort: Desc), id(sort: Desc)])
+  @@index([userId, categoryId, status, date])
+  @@index([categoryId])
 }
 
 model Budget {
@@ -63,6 +69,9 @@ model Budget {
   category Category @relation(fields: [categoryId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, categoryId, date])
 }
 
 enum FlowType {
