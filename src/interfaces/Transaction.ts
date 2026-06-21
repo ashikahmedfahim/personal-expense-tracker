@@ -60,3 +60,13 @@ export interface ITransactionWithCategory {
   transaction: ICurrentMonthTransaction;
   category: Pick<ICurrentMonthCategoryWithTransactions, 'id' | 'name' | 'flowType' | 'order'>;
 }
+
+export interface ITransactionDailyAmount {
+  date: Date;
+  amount: number;
+}
+
+export interface IDailyExpenseTotal {
+  date: string;
+  total: number;
+}

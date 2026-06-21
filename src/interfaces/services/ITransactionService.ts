@@ -1,4 +1,5 @@
 import type {
+  IDailyExpenseTotal,
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
@@ -8,6 +9,7 @@ import type {
 export interface ITransactionService {
   listRecent(userId: number): Promise<ITransaction[]>;
   listCurrentMonth(userId: number): Promise<ITransactionsByCategory[]>;
+  getCurrentMonthDailyTotals(userId: number): Promise<IDailyExpenseTotal[]>;
   create(userId: number, data: ITransactionCreateInput): Promise<ITransaction>;
   update(userId: number, id: number, data: ITransactionUpdateInput): Promise<ITransaction>;
   delete(userId: number, id: number): Promise<void>;

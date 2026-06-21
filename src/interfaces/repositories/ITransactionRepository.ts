@@ -1,6 +1,7 @@
 import type {
   ITransaction,
   ITransactionCreateInput,
+  ITransactionDailyAmount,
   ITransactionUpdateInput,
   ITransactionWithCategory,
 } from '../Transaction.js';
@@ -13,6 +14,11 @@ export interface ITransactionRepository {
     end: Date,
     limit: number,
   ): Promise<ITransactionWithCategory[]>;
+  findOutflowAmountsInDateRangeByUserId(
+    userId: number,
+    start: Date,
+    end: Date,
+  ): Promise<ITransactionDailyAmount[]>;
   findByIdAndUserId(id: number, userId: number): Promise<ITransaction | null>;
   create(userId: number, data: ITransactionCreateInput): Promise<ITransaction>;
   update(id: number, userId: number, data: ITransactionUpdateInput): Promise<ITransaction | null>;

@@ -1,14 +1,16 @@
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 import type {
+  IDailyExpenseTotal,
   ITransaction,
   ITransactionCreateInput,
+  ITransactionDailyAmount,
   ITransactionUpdateInput,
   ITransactionsByCategory,
   ITransactionWithCategory,
 } from '../interfaces/Transaction.js';
 import type { ITransactionService } from '../interfaces/services/ITransactionService.js';
-import { getCurrentMonthUtcRange } from '../utils/date.js';
+import { formatUtcDateKey, getCurrentMonthUtcRange, getUtcDateKeysForMonth } from '../utils/date.js';
 import { AppError } from '../utils/errors.js';
 
 const RECENT_TRANSACTION_LIMIT = 10;
@@ -37,6 +39,24 @@ export class TransactionService implements ITransactionService {
       CURRENT_MONTH_TRANSACTION_LIMIT,
     );
     return this.groupByCategory(items);
+  }
+
+  async getCurrentMonthDailyTotals(userId: number): Promise<IDailyExpenseTotal[]> {
+    const referenceDate: Date = new Date();
+    const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange(referenceDate);
+    const amounts: ITransactionDailyAmount[] =
+      await this.transactionRepository.findOutflowAmountsInDateRangeByUserId(userId, start, end);
+
+    const totalsByDay = new Map<string, number>();
+    for (const { date, amount } of amounts) {
+      const dateKey: string = formatUtcDateKey(date);
+      totalsByDay.set(dateKey, (totalsByDay.get(dateKey) ?? 0) + amount);
+    }
+
+    return getUtcDateKeysForMonth(referenceDate).map((date) => ({
+      date,
+      total: totalsByDay.get(date) ?? 0,
+    }));
   }
 
   private groupByCategory(items: ITransactionWithCategory[]): ITransactionsByCategory[] {

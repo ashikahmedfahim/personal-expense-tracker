@@ -4,6 +4,7 @@ import type { ICategory } from '../interfaces/Category.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 import type {
+  IDailyExpenseTotal,
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
@@ -59,6 +60,7 @@ describe('TransactionService', () => {
     transactionRepository = {
       findRecentByUserId: vi.fn(),
       findRecentInDateRangeByUserId: vi.fn(),
+      findOutflowAmountsInDateRangeByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -141,6 +143,31 @@ describe('TransactionService', () => {
           },
         },
       ]);
+      vi.useRealTimers();
+    });
+  });
+
+  describe('getCurrentMonthDailyTotals', () => {
+    it('returns daily outflow totals for every day in the current UTC month', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-06-15T12:00:00.000Z'));
+      vi.mocked(transactionRepository.findOutflowAmountsInDateRangeByUserId).mockResolvedValue([
+        { date: new Date('2024-06-01T10:00:00.000Z'), amount: 4.5 },
+        { date: new Date('2024-06-01T18:00:00.000Z'), amount: 10 },
+        { date: new Date('2024-06-03T08:00:00.000Z'), amount: 25 },
+      ]);
+
+      const result: IDailyExpenseTotal[] = await transactionService.getCurrentMonthDailyTotals(userId);
+
+      expect(transactionRepository.findOutflowAmountsInDateRangeByUserId).toHaveBeenCalledWith(
+        userId,
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-06-30T23:59:59.999Z'),
+      );
+      expect(result).toHaveLength(30);
+      expect(result[0]).toEqual({ date: '2024-06-01', total: 14.5 });
+      expect(result[1]).toEqual({ date: '2024-06-02', total: 0 });
+      expect(result[2]).toEqual({ date: '2024-06-03', total: 25 });
       vi.useRealTimers();
     });
   });

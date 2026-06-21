@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import type { ITransactionController } from '../interfaces/controllers/ITransactionController.js';
 import type { ITransactionService } from '../interfaces/services/ITransactionService.js';
 import type {
+  IDailyExpenseTotal,
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
@@ -29,6 +30,13 @@ export class TransactionController extends BaseController implements ITransactio
     await this.handleRequest(async () => {
       const groups: ITransactionsByCategory[] = await this.transactionService.listCurrentMonth(req.user!.id);
       this.ok(res, groups);
+    }, next);
+  }
+
+  async getCurrentMonthDailyTotals(req: Request, res: Response, next: NextFunction): Promise<void> {
+    await this.handleRequest(async () => {
+      const totals: IDailyExpenseTotal[] = await this.transactionService.getCurrentMonthDailyTotals(req.user!.id);
+      this.ok(res, totals);
     }, next);
   }
 

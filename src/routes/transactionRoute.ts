@@ -20,6 +20,10 @@ router.get(
   '/current-month',
   transactionController.listCurrentMonthTransactions.bind(transactionController),
 );
+router.get(
+  '/current-month/daily-totals',
+  transactionController.getCurrentMonthDailyTotals.bind(transactionController),
+);
 router.post('/', transactionController.createTransaction.bind(transactionController));
 router.patch('/:id', transactionController.updateTransaction.bind(transactionController));
 router.delete('/:id', transactionController.deleteTransaction.bind(transactionController));

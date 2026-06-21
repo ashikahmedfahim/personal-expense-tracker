@@ -4,6 +4,7 @@ import { TransactionStatus } from '../generated/prisma/enums.js';
 import type { IRequestUser } from '../interfaces/auth.js';
 import { FlowType } from '../generated/prisma/enums.js';
 import type {
+  IDailyExpenseTotal,
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
@@ -59,6 +60,7 @@ describe('TransactionController', () => {
     transactionService = {
       listRecent: vi.fn(),
       listCurrentMonth: vi.fn(),
+      getCurrentMonthDailyTotals: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -107,6 +109,22 @@ describe('TransactionController', () => {
     expect(transactionService.listCurrentMonth).toHaveBeenCalledWith(authenticatedUser.id);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ message: null, data: grouped });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns current month daily expense totals', async () => {
+    const dailyTotals: IDailyExpenseTotal[] = [
+      { date: '2024-06-01', total: 14.5 },
+      { date: '2024-06-02', total: 0 },
+    ];
+    vi.mocked(transactionService.getCurrentMonthDailyTotals).mockResolvedValue(dailyTotals);
+    const req: Request = createRequest();
+
+    await transactionController.getCurrentMonthDailyTotals(req, res, next);
+
+    expect(transactionService.getCurrentMonthDailyTotals).toHaveBeenCalledWith(authenticatedUser.id);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ message: null, data: dailyTotals });
     expect(next).not.toHaveBeenCalled();
   });
 
