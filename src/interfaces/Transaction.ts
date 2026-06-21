@@ -70,3 +70,8 @@ export interface IDailyExpenseTotal {
   date: string;
   total: number;
 }
+
+export interface ICategorySpendingTotal {
+  categoryId: number;
+  total: number;
+}

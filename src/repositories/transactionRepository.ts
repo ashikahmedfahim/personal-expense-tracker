@@ -1,6 +1,7 @@
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { FlowType, TransactionStatus } from '../generated/prisma/enums.js';
 import type {
+  ICategorySpendingTotal,
   ITransaction,
   ITransactionCreateInput,
   ITransactionDailyAmount,
@@ -88,6 +89,36 @@ export class TransactionRepository implements ITransactionRepository {
         amount: true,
       },
     });
+    return response;
+  }
+
+  async sumOutflowByCategoryInDateRangeByUserId(
+    userId: number,
+    start: Date,
+    end: Date,
+  ): Promise<ICategorySpendingTotal[]> {
+    const rows = await this.db.transaction.groupBy({
+      by: ['categoryId'],
+      where: {
+        userId,
+        status: TransactionStatus.COMPLETED,
+        date: {
+          gte: start,
+          lte: end,
+        },
+        category: {
+          flowType: FlowType.OUTFLOW,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const response: ICategorySpendingTotal[] = rows.map((row) => ({
+      categoryId: row.categoryId,
+      total: row._sum.amount ?? 0,
+    }));
     return response;
   }
 

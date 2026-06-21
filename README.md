@@ -9,7 +9,7 @@ A TypeScript REST API for personal finance: user authentication, categories (inf
 | **Layered architecture** | Routes → controllers → validators → services → repositories → database |
 | **JWT authentication** | Bearer tokens on protected routes; payload carries `id` and `email` |
 | **Categories** | Inflow/outflow categories with per-user display order (auto-assigned on create, reorderable) |
-| **Transactions** | CRUD linked to categories; status set to `COMPLETED` on create |
+| **Transactions** | CRUD linked to categories; outflow transactions require a monthly budget first |
 | **Budgets** | Monthly budgets per outflow category (one budget per category per UTC month) |
 | **Rate limiting** | Global API limit plus separate limits for registration and login |
 | **Request validation** | Joi schemas for request bodies and route params |
@@ -250,6 +250,8 @@ Authorization: Bearer <token>
 | `description` | Optional |
 | `date` | Optional ISO date; defaults to now |
 
+**Outflow transactions** require a budget for the same category in the transaction's UTC month. Create the budget first (`POST /v1/budgets`); otherwise the API returns `400`. Inflow transactions are not subject to this rule.
+
 **Update body (at least one field):** `title`, `amount` (> 0), `categoryId`, `description`, `date`.
 
 **Current month response shape** — array of groups:
@@ -294,6 +296,7 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `GET` | `/v1/budgets/current-month` | All budgets for the current UTC month with per-category spending |
 | `POST` | `/v1/budgets` | Create monthly budget for an outflow category |
 | `PATCH` | `/v1/budgets/:id` | Update budget amount only |
 | `DELETE` | `/v1/budgets/:id` | Delete budget |
@@ -316,6 +319,70 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 ```
 
 **Update body:**
+
+```json
+{
+  "amount": 750
+}
+```
+
+**Current month overview response shape:**
+
+```json
+{
+  "message": null,
+  "data": {
+    "month": "2024-06",
+    "summary": {
+      "totalBudget": 700,
+      "totalSpent": 370,
+      "remaining": 330
+    },
+    "budgets": [
+      {
+        "budget": {
+          "id": 1,
+          "amount": 500,
+          "date": "2024-06-01T00:00:00.000Z",
+          "categoryId": 3,
+          "userId": 1,
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "updatedAt": "2024-01-01T00:00:00.000Z"
+        },
+        "category": {
+          "id": 3,
+          "name": "Food",
+          "flowType": "OUTFLOW",
+          "order": 1
+        },
+        "spent": 320,
+        "remaining": 180
+      },
+      {
+        "budget": {
+          "id": 2,
+          "amount": 200,
+          "date": "2024-06-01T00:00:00.000Z",
+          "categoryId": 5,
+          "userId": 1,
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "updatedAt": "2024-01-01T00:00:00.000Z"
+        },
+        "category": {
+          "id": 5,
+          "name": "Transport",
+          "flowType": "OUTFLOW",
+          "order": 2
+        },
+        "spent": 50,
+        "remaining": 150
+      }
+    ]
+  }
+}
+```
+
+Spending includes **completed** outflow transactions in the current UTC month. Budgets are sorted by category `order`. `remaining` can be negative if spending exceeds the budget.
 
 ```json
 {
@@ -502,7 +569,7 @@ curl -s -X POST http://localhost:3000/v1/users/login \
 
 Use the token from the login response as `Authorization: Bearer <token>` on `/v1/categories`, `/v1/transactions`, and `/v1/budgets` routes.
 
-Example — create an outflow category, transaction, and budget:
+Example — create an outflow category, budget, then transaction:
 
 ```bash
 # Create category
@@ -511,17 +578,17 @@ curl -s -X POST http://localhost:3000/v1/categories \
   -H "Content-Type: application/json" \
   -d '{"name":"Groceries","flowType":"OUTFLOW"}'
 
+# Create monthly budget for the category (required before outflow transactions)
+curl -s -X POST http://localhost:3000/v1/budgets \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"categoryId":3,"amount":500}'
+
 # Create transaction (categoryId from previous response)
 curl -s -X POST http://localhost:3000/v1/transactions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title":"Coffee","amount":4.5,"categoryId":3}'
-
-# Create monthly budget for the same category
-curl -s -X POST http://localhost:3000/v1/budgets \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"categoryId":3,"amount":500}'
 ```
 
 ### Services and ports

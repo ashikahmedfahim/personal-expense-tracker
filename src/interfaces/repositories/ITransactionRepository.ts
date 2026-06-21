@@ -1,4 +1,5 @@
 import type {
+  ICategorySpendingTotal,
   ITransaction,
   ITransactionCreateInput,
   ITransactionDailyAmount,
@@ -19,6 +20,11 @@ export interface ITransactionRepository {
     start: Date,
     end: Date,
   ): Promise<ITransactionDailyAmount[]>;
+  sumOutflowByCategoryInDateRangeByUserId(
+    userId: number,
+    start: Date,
+    end: Date,
+  ): Promise<ICategorySpendingTotal[]>;
   findByIdAndUserId(id: number, userId: number): Promise<ITransaction | null>;
   create(userId: number, data: ITransactionCreateInput): Promise<ITransaction>;
   update(id: number, userId: number, data: ITransactionUpdateInput): Promise<ITransaction | null>;

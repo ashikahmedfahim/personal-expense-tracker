@@ -1,6 +1,7 @@
 import express from 'express';
 import { SQLDatabase } from '../database/index.js';
 import { TransactionController } from '../controllers/transactionController.js';
+import { BudgetRepository } from '../repositories/budgetRepository.js';
 import { CategoryRepository } from '../repositories/categoryRepository.js';
 import { TransactionRepository } from '../repositories/transactionRepository.js';
 import { TransactionService } from '../services/transactionService.js';
@@ -11,7 +12,8 @@ const router = express.Router();
 const db = SQLDatabase.getInstance();
 const transactionRepository = new TransactionRepository(db);
 const categoryRepository = new CategoryRepository(db);
-const transactionService = new TransactionService(transactionRepository, categoryRepository);
+const budgetRepository = new BudgetRepository(db);
+const transactionService = new TransactionService(transactionRepository, categoryRepository, budgetRepository);
 const transactionValidator = new TransactionValidator();
 const transactionController = new TransactionController(transactionService, transactionValidator);
 

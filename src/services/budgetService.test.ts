@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowType } from '../generated/prisma/enums.js';
 import type { ICategory } from '../interfaces/Category.js';
-import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput } from '../interfaces/Budget.js';
+import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput, ICurrentMonthBudgetOverview } from '../interfaces/Budget.js';
 import type { ICategoryRepository } from '../interfaces/repositories/ICategoryRepository.js';
 import type { IBudgetRepository } from '../interfaces/repositories/IBudgetRepository.js';
+import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 import { AppError } from '../utils/errors.js';
 import { BudgetService } from './budgetService.js';
 
@@ -45,6 +46,7 @@ const budget: IBudget = {
 describe('BudgetService', () => {
   let budgetRepository: IBudgetRepository;
   let categoryRepository: ICategoryRepository;
+  let transactionRepository: ITransactionRepository;
   let budgetService: BudgetService;
 
   beforeEach(() => {
@@ -53,6 +55,7 @@ describe('BudgetService', () => {
     budgetRepository = {
       findByIdAndUserId: vi.fn(),
       findByCategoryIdAndUserIdInMonth: vi.fn(),
+      findAllByUserIdInMonth: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -68,7 +71,18 @@ describe('BudgetService', () => {
       delete: vi.fn(),
     };
 
-    budgetService = new BudgetService(budgetRepository, categoryRepository);
+    transactionRepository = {
+      findRecentByUserId: vi.fn(),
+      findRecentInDateRangeByUserId: vi.fn(),
+      findOutflowAmountsInDateRangeByUserId: vi.fn(),
+      sumOutflowByCategoryInDateRangeByUserId: vi.fn(),
+      findByIdAndUserId: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    budgetService = new BudgetService(budgetRepository, categoryRepository, transactionRepository);
   });
 
   describe('create', () => {
@@ -119,6 +133,90 @@ describe('BudgetService', () => {
         new Date('2024-06-01T00:00:00.000Z'),
       );
       expect(result).toEqual(budget);
+    });
+  });
+
+  describe('getCurrentMonthOverview', () => {
+    const transportCategory = {
+      id: 5,
+      name: 'Transport',
+      flowType: FlowType.OUTFLOW,
+      order: 2,
+    };
+
+    const transportBudget: IBudget = {
+      id: 2,
+      amount: 200,
+      date: new Date('2024-06-01T00:00:00.000Z'),
+      categoryId: 5,
+      userId,
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+    };
+
+    it('returns current month budgets with per-category spending and totals', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-06-15T12:00:00.000Z'));
+      vi.mocked(budgetRepository.findAllByUserIdInMonth).mockResolvedValue([
+        {
+          budget,
+          category: {
+            id: outflowCategory.id,
+            name: outflowCategory.name,
+            flowType: outflowCategory.flowType,
+            order: outflowCategory.order,
+          },
+        },
+        {
+          budget: transportBudget,
+          category: transportCategory,
+        },
+      ]);
+      vi.mocked(transactionRepository.sumOutflowByCategoryInDateRangeByUserId).mockResolvedValue([
+        { categoryId: 3, total: 320 },
+        { categoryId: 5, total: 50 },
+      ]);
+
+      const result: ICurrentMonthBudgetOverview = await budgetService.getCurrentMonthOverview(userId);
+
+      expect(budgetRepository.findAllByUserIdInMonth).toHaveBeenCalledWith(
+        userId,
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-06-30T23:59:59.999Z'),
+      );
+      expect(transactionRepository.sumOutflowByCategoryInDateRangeByUserId).toHaveBeenCalledWith(
+        userId,
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-06-30T23:59:59.999Z'),
+      );
+      expect(result).toEqual({
+        month: '2024-06',
+        summary: {
+          totalBudget: 700,
+          totalSpent: 370,
+          remaining: 330,
+        },
+        budgets: [
+          {
+            budget,
+            category: {
+              id: outflowCategory.id,
+              name: outflowCategory.name,
+              flowType: outflowCategory.flowType,
+              order: outflowCategory.order,
+            },
+            spent: 320,
+            remaining: 180,
+          },
+          {
+            budget: transportBudget,
+            category: transportCategory,
+            spent: 50,
+            remaining: 150,
+          },
+        ],
+      });
+      vi.useRealTimers();
     });
   });
 

@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
+import { FlowType } from '../generated/prisma/enums.js';
 import type { IBudget } from '../interfaces/Budget.js';
 import { JWT } from '../utils/JWT.js';
 
 const mockCreate = vi.fn();
+const mockGetCurrentMonthOverview = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 
@@ -24,6 +26,7 @@ vi.mock('../services/budgetService.js', () => ({
   BudgetService: vi.fn(function BudgetService() {
     return {
       create: mockCreate,
+      getCurrentMonthOverview: mockGetCurrentMonthOverview,
       update: mockUpdate,
       delete: mockDelete,
     };
@@ -70,6 +73,44 @@ describe('Budget routes (authenticated)', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ message: 'Authentication required' });
     expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  describe('GET /v1/budgets/current-month', () => {
+    it('returns 200 with current month budgets and spending', async () => {
+      const overview = {
+        month: '2024-06',
+        summary: {
+          totalBudget: 500,
+          totalSpent: 320,
+          remaining: 180,
+        },
+        budgets: [
+          {
+            budget: serializedBudget,
+            category: {
+              id: 3,
+              name: 'Food',
+              flowType: FlowType.OUTFLOW,
+              order: 1,
+            },
+            spent: 320,
+            remaining: 180,
+          },
+        ],
+      };
+      mockGetCurrentMonthOverview.mockResolvedValue(overview);
+
+      const response = await request(app)
+        .get('/v1/budgets/current-month')
+        .set(authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: null,
+        data: overview,
+      });
+      expect(mockGetCurrentMonthOverview).toHaveBeenCalledWith(1);
+    });
   });
 
   describe('POST /v1/budgets', () => {

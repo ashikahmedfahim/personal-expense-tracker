@@ -22,6 +22,12 @@ export function formatUtcDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function formatUtcMonthKey(date: Date): string {
+  const year: number = date.getUTCFullYear();
+  const month: string = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
 export function getUtcDateKeysForMonth(referenceDate: Date): string[] {
   const year: number = referenceDate.getUTCFullYear();
   const month: number = referenceDate.getUTCMonth();

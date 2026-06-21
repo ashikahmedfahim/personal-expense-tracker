@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { IBudgetController } from '../interfaces/controllers/IBudgetController.js';
 import type { IBudgetService } from '../interfaces/services/IBudgetService.js';
-import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput } from '../interfaces/Budget.js';
+import type { IBudget, IBudgetCreateInput, IBudgetUpdateInput, ICurrentMonthBudgetOverview } from '../interfaces/Budget.js';
 import type { IBudgetValidator } from '../interfaces/validators/IBudgetValidator.js';
 import { BaseController } from './baseController.js';
 
@@ -18,6 +18,13 @@ export class BudgetController extends BaseController implements IBudgetControlle
       const validatedData: IBudgetCreateInput = this.budgetValidator.validateCreateBudget(req.body);
       const budget: IBudget = await this.budgetService.create(req.user!.id, validatedData);
       this.created(res, budget, 'Budget created successfully');
+    }, next);
+  }
+
+  async getCurrentMonthOverview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    await this.handleRequest(async () => {
+      const overview: ICurrentMonthBudgetOverview = await this.budgetService.getCurrentMonthOverview(req.user!.id);
+      this.ok(res, overview);
     }, next);
   }
 
