@@ -4,6 +4,10 @@ import type { IUserResponse } from '../interfaces/User.js';
 
 const mockCreate = vi.fn();
 const mockLogin = vi.fn();
+const mockVerifyEmail = vi.fn();
+const mockResendVerification = vi.fn();
+const mockForgotPassword = vi.fn();
+const mockResetPassword = vi.fn();
 
 vi.mock('../database/index.js', () => ({
   SQLDatabase: {
@@ -11,11 +15,23 @@ vi.mock('../database/index.js', () => ({
   },
 }));
 
+vi.mock('../services/emailService.js', () => ({
+  EmailService: vi.fn(function EmailService() {
+    return {
+      sendVerificationCode: vi.fn(),
+    };
+  }),
+}));
+
 vi.mock('../services/userService.js', () => ({
   UserService: vi.fn(function UserService() {
     return {
       create: mockCreate,
       login: mockLogin,
+      verifyEmail: mockVerifyEmail,
+      resendVerification: mockResendVerification,
+      forgotPassword: mockForgotPassword,
+      resetPassword: mockResetPassword,
     };
   }),
 }));
@@ -39,6 +55,7 @@ const userResponse: IUserResponse = {
   firstName: 'Jane',
   lastName: 'Doe',
   email: 'jane@example.com',
+  emailVerified: false,
   createdAt: new Date('2024-01-01T00:00:00.000Z'),
   updatedAt: new Date('2024-01-01T00:00:00.000Z'),
 };
@@ -66,7 +83,7 @@ describe('POST /v1/users', () => {
 
     expect(response.status).toBe(201);
     expect(response.body).toEqual({
-      message: 'User created successfully',
+      message: 'User created successfully. Check your email for a verification code.',
       data: {
         ...userResponse,
         createdAt: userResponse.createdAt.toISOString(),

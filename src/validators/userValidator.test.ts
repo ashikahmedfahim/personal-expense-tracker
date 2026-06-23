@@ -88,4 +88,34 @@ describe('UserValidator', () => {
       ).toThrow(AppError);
     });
   });
+
+  describe('validateVerifyEmail', () => {
+    it('returns validated input for a valid payload', () => {
+      expect(
+        validator.validateVerifyEmail({ email: 'jane@example.com', code: '123456' }),
+      ).toEqual({ email: 'jane@example.com', code: '123456' });
+    });
+
+    it('throws AppError 400 when code is not 6 digits', () => {
+      expect(() =>
+        validator.validateVerifyEmail({ email: 'jane@example.com', code: '12345' }),
+      ).toThrow(AppError);
+    });
+  });
+
+  describe('validateResetPassword', () => {
+    it('returns validated input for a valid payload', () => {
+      expect(
+        validator.validateResetPassword({
+          email: 'jane@example.com',
+          code: '123456',
+          password: 'password123',
+        }),
+      ).toEqual({
+        email: 'jane@example.com',
+        code: '123456',
+        password: 'password123',
+      });
+    });
+  });
 });

@@ -40,6 +40,11 @@ export type StringFilter<$PrismaModel = never> = {
   not?: Prisma.NestedStringFilter<$PrismaModel> | string
 }
 
+export type BoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
 export type DateTimeFilter<$PrismaModel = never> = {
   equals?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel>
   in?: Date[] | string[] | Prisma.ListDateTimeFieldRefInput<$PrismaModel>
@@ -85,6 +90,14 @@ export type StringWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedStringFilter<$PrismaModel>
 }
 
+export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
+}
+
 export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
   equals?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel>
   in?: Date[] | string[] | Prisma.ListDateTimeFieldRefInput<$PrismaModel>
@@ -97,6 +110,23 @@ export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedDateTimeFilter<$PrismaModel>
   _max?: Prisma.NestedDateTimeFilter<$PrismaModel>
+}
+
+export type EnumVerificationPurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.VerificationPurpose | Prisma.EnumVerificationPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.VerificationPurpose[] | Prisma.ListEnumVerificationPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VerificationPurpose[] | Prisma.ListEnumVerificationPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVerificationPurposeFilter<$PrismaModel> | $Enums.VerificationPurpose
+}
+
+export type EnumVerificationPurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VerificationPurpose | Prisma.EnumVerificationPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.VerificationPurpose[] | Prisma.ListEnumVerificationPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VerificationPurpose[] | Prisma.ListEnumVerificationPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVerificationPurposeWithAggregatesFilter<$PrismaModel> | $Enums.VerificationPurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVerificationPurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVerificationPurposeFilter<$PrismaModel>
 }
 
 export type EnumFlowTypeFilter<$PrismaModel = never> = {
@@ -223,6 +253,11 @@ export type NestedStringFilter<$PrismaModel = never> = {
   not?: Prisma.NestedStringFilter<$PrismaModel> | string
 }
 
+export type NestedBoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
 export type NestedDateTimeFilter<$PrismaModel = never> = {
   equals?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel>
   in?: Date[] | string[] | Prisma.ListDateTimeFieldRefInput<$PrismaModel>
@@ -278,6 +313,14 @@ export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedStringFilter<$PrismaModel>
 }
 
+export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
+}
+
 export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
   equals?: Date | string | Prisma.DateTimeFieldRefInput<$PrismaModel>
   in?: Date[] | string[] | Prisma.ListDateTimeFieldRefInput<$PrismaModel>
@@ -290,6 +333,23 @@ export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedDateTimeFilter<$PrismaModel>
   _max?: Prisma.NestedDateTimeFilter<$PrismaModel>
+}
+
+export type NestedEnumVerificationPurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.VerificationPurpose | Prisma.EnumVerificationPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.VerificationPurpose[] | Prisma.ListEnumVerificationPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VerificationPurpose[] | Prisma.ListEnumVerificationPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVerificationPurposeFilter<$PrismaModel> | $Enums.VerificationPurpose
+}
+
+export type NestedEnumVerificationPurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VerificationPurpose | Prisma.EnumVerificationPurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.VerificationPurpose[] | Prisma.ListEnumVerificationPurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VerificationPurpose[] | Prisma.ListEnumVerificationPurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVerificationPurposeWithAggregatesFilter<$PrismaModel> | $Enums.VerificationPurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVerificationPurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVerificationPurposeFilter<$PrismaModel>
 }
 
 export type NestedEnumFlowTypeFilter<$PrismaModel = never> = {

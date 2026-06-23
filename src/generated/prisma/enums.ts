@@ -9,6 +9,14 @@
 * 🟢 You can import this file directly.
 */
 
+export const VerificationPurpose = {
+  SIGNUP: 'SIGNUP',
+  PASSWORD_RESET: 'PASSWORD_RESET'
+} as const
+
+export type VerificationPurpose = (typeof VerificationPurpose)[keyof typeof VerificationPurpose]
+
+
 export const FlowType = {
   INFLOW: 'INFLOW',
   OUTFLOW: 'OUTFLOW',

@@ -111,12 +111,13 @@ flowchart TB
 
 | Model | Key fields | Notes |
 |-------|------------|--------|
-| **User** | `email`, `password` (hashed) | Owns categories, transactions, budgets |
+| **User** | `email`, `password` (hashed), `emailVerified` | Owns categories, transactions, budgets; must verify email before login |
+| **VerificationCode** | `codeHash`, `purpose`, `attempts`, `maxAttempts`, `expiresAt` | Hashed 6-digit codes for signup and password reset (max 3 attempts) |
 | **Category** | `name`, `flowType`, `order` | `order` is per-user; unique sequence for display |
 | **Transaction** | `title`, `amount`, `date`, `status`, `categoryId` | Create API sets `status` to `COMPLETED` |
 | **Budget** | `amount`, `date`, `categoryId` | `date` stored as month start (UTC); outflow categories only |
 
-Enums: `FlowType` (`INFLOW`, `OUTFLOW`, `SAVINGS`), `TransactionStatus` (`PENDING`, `COMPLETED`, `CANCELLED`).
+Enums: `FlowType` (`INFLOW`, `OUTFLOW`, `SAVINGS`), `TransactionStatus` (`PENDING`, `COMPLETED`, `CANCELLED`), `VerificationPurpose` (`SIGNUP`, `PASSWORD_RESET`).
 
 Schema and migrations live in [`src/prisma/`](src/prisma/).
 
@@ -151,8 +152,9 @@ Error (global handler, rate limiter, `AppError`):
 | **pg** | PostgreSQL client used by Prisma adapter |
 | **joi** | Request body and param validation |
 | **jsonwebtoken** | Sign login tokens and verify Bearer tokens (HS256 only) |
-| **bcrypt** | Password hashing and comparison |
-| **express-rate-limit** | API-wide, registration, and login rate limits |
+| **bcrypt** | Password and verification-code hashing |
+| **resend** | Transactional email (signup verification, password reset codes) |
+| **express-rate-limit** | API-wide, registration, login, and verification rate limits |
 | **dotenv** | Load environment variables |
 | **pino** + **pino-http** | Structured JSON logging per request |
 | **prom-client** | Prometheus metrics (`http_requests_total`, request duration) |
@@ -174,8 +176,12 @@ Error (global handler, rate limiter, `AppError`):
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/v1/users` | Register user |
-| `POST` | `/v1/users/login` | Login; returns JWT |
+| `POST` | `/v1/users` | Register user; sends a 6-digit verification code via email |
+| `POST` | `/v1/users/verify-email` | Verify signup code (`{ email, code }`) |
+| `POST` | `/v1/users/resend-verification` | Resend signup verification code |
+| `POST` | `/v1/users/forgot-password` | Send password reset code |
+| `POST` | `/v1/users/reset-password` | Reset password with code (`{ email, code, password }`) |
+| `POST` | `/v1/users/login` | Login; returns JWT (requires verified email) |
 | `GET` | `/health` | Liveness |
 | `GET` | `/ready` | Readiness (DB ping) |
 | `GET` | `/metrics` | Prometheus scrape (requires `Authorization: Bearer <METRICS_TOKEN>`) |
@@ -617,16 +623,32 @@ curl http://localhost:3000/health
 curl http://localhost:3000/ready
 ```
 
-Register and log in:
+Register, verify email, and log in:
 
 ```bash
 curl -s -X POST http://localhost:3000/v1/users \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Jane","lastName":"Doe","email":"jane@example.com","password":"password123"}'
 
+curl -s -X POST http://localhost:3000/v1/users/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"jane@example.com","code":"123456"}'
+
 curl -s -X POST http://localhost:3000/v1/users/login \
   -H "Content-Type: application/json" \
   -d '{"email":"jane@example.com","password":"password123"}'
+```
+
+Forgot password flow:
+
+```bash
+curl -s -X POST http://localhost:3000/v1/users/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email":"jane@example.com"}'
+
+curl -s -X POST http://localhost:3000/v1/users/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{"email":"jane@example.com","code":"123456","password":"newpassword1"}'
 ```
 
 Use the token from the login response as `Authorization: Bearer <token>` on `/v1/categories`, `/v1/transactions`, and `/v1/budgets` routes.
@@ -699,10 +721,14 @@ docker compose -f docker-compose.dev.yml exec app npm test
 |----------|---------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | Secret for signing/verifying JWTs |
+| `RESEND_API_KEY` | Resend API key for sending verification emails |
+| `EMAIL_FROM` | Verified sender address in Resend (e.g. `onboarding@resend.dev` for testing) |
+| `VERIFICATION_CODE_TTL_MS` | Verification code expiry (default 5 minutes) |
 | `METRICS_TOKEN` | Bearer token for `/metrics` |
 | `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX` | Global API rate limit |
 | `REGISTER_RATE_LIMIT_*` | Registration endpoint limit |
 | `LOGIN_RATE_LIMIT_*` | Login endpoint limit (skips successful logins) |
+| `VERIFICATION_RATE_LIMIT_*` | Verify / resend / forgot / reset endpoint limits |
 
 ## Scripts
 
@@ -793,7 +819,8 @@ npm test
 ## Security notes
 
 - JWTs are signed with **HS256**; verification pins `algorithms: ['HS256']` to block algorithm-confusion attacks.
-- Passwords are never returned in API responses (`IUserResponse` omits `password`).
+- Passwords and verification codes are never returned in API responses.
+- Verification codes are stored as bcrypt hashes; each code allows up to 3 attempts before a new code is required.
 - Login and registration use dedicated, stricter rate limiters than the general API.
 - Protected routes scope all queries by `req.user.id` from the JWT (categories, transactions, budgets).
 - Transaction `status` is set server-side on create (`COMPLETED`); clients cannot override it.

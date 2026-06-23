@@ -22,7 +22,7 @@ export class Logger {
         timestamp: pino.stdTimeFunctions.isoTime,
 
         redact: {
-          paths: ['req.headers.authorization', 'req.headers.cookie', 'req.body.password', 'req.body.token', 'req.body.accessToken', 'req.body.refreshToken'],
+          paths: ['req.headers.authorization', 'req.headers.cookie', 'req.body.password', 'req.body.token', 'req.body.accessToken', 'req.body.refreshToken', 'req.body.code'],
           censor: '[REDACTED]',
         },
       };

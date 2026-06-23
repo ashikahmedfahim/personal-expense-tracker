@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  VerificationCode: 'VerificationCode',
   Category: 'Category',
   Transaction: 'Transaction',
   Budget: 'Budget'
@@ -79,11 +80,27 @@ export const UserScalarFieldEnum = {
   lastName: 'lastName',
   email: 'email',
   password: 'password',
+  emailVerified: 'emailVerified',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const VerificationCodeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  purpose: 'purpose',
+  codeHash: 'codeHash',
+  attempts: 'attempts',
+  maxAttempts: 'maxAttempts',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type VerificationCodeScalarFieldEnum = (typeof VerificationCodeScalarFieldEnum)[keyof typeof VerificationCodeScalarFieldEnum]
 
 
 export const CategoryScalarFieldEnum = {

@@ -14,6 +14,11 @@ const loginWindowMs = Number(
 );
 const loginLimit = Number(process.env.LOGIN_RATE_LIMIT_MAX ?? 5);
 
+const verificationWindowMs = Number(
+  process.env.VERIFICATION_RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000
+);
+const verificationLimit = Number(process.env.VERIFICATION_RATE_LIMIT_MAX ?? 10);
+
 export const apiRateLimiter = rateLimit({
   windowMs: apiWindowMs,
   limit: apiLimit,
@@ -56,3 +61,32 @@ export const loginRateLimiter = rateLimit({
     });
   },
 });
+
+function createVerificationRateLimiter(message: string) {
+  return rateLimit({
+    windowMs: verificationWindowMs,
+    limit: verificationLimit,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+
+    handler: (_req: Request, res: Response) => {
+      res.status(429).json({ message });
+    },
+  });
+}
+
+export const verifyEmailRateLimiter = createVerificationRateLimiter(
+  "Too many verification attempts. Please try again later.",
+);
+
+export const resendVerificationRateLimiter = createVerificationRateLimiter(
+  "Too many resend attempts. Please try again later.",
+);
+
+export const forgotPasswordRateLimiter = createVerificationRateLimiter(
+  "Too many password reset requests. Please try again later.",
+);
+
+export const resetPasswordRateLimiter = createVerificationRateLimiter(
+  "Too many password reset attempts. Please try again later.",
+);

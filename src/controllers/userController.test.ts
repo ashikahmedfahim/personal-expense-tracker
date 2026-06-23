@@ -23,6 +23,7 @@ const userResponse: IUserResponse = {
   firstName: 'Jane',
   lastName: 'Doe',
   email: 'jane@example.com',
+  emailVerified: false,
   createdAt: new Date('2024-01-01T00:00:00.000Z'),
   updatedAt: new Date('2024-01-01T00:00:00.000Z'),
 };
@@ -45,11 +46,19 @@ describe('UserController', () => {
     userService = {
       create: vi.fn(),
       login: vi.fn(),
+      verifyEmail: vi.fn(),
+      resendVerification: vi.fn(),
+      forgotPassword: vi.fn(),
+      resetPassword: vi.fn(),
     };
 
     userValidator = {
       validateCreateUser: vi.fn(),
       validateLoginUser: vi.fn(),
+      validateVerifyEmail: vi.fn(),
+      validateResendVerification: vi.fn(),
+      validateForgotPassword: vi.fn(),
+      validateResetPassword: vi.fn(),
     };
 
     userController = new UserController(userService, userValidator);
@@ -70,7 +79,7 @@ describe('UserController', () => {
       expect(userService.create).toHaveBeenCalledWith(createInput);
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({
-        message: 'User created successfully',
+        message: 'User created successfully. Check your email for a verification code.',
         data: userResponse,
       });
       expect(next).not.toHaveBeenCalled();

@@ -385,6 +385,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  VerificationCode: 'VerificationCode',
   Category: 'Category',
   Transaction: 'Transaction',
   Budget: 'Budget'
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "category" | "transaction" | "budget"
+    modelProps: "user" | "verificationCode" | "category" | "transaction" | "budget"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -478,6 +479,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    VerificationCode: {
+      payload: Prisma.$VerificationCodePayload<ExtArgs>
+      fields: Prisma.VerificationCodeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.VerificationCodeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.VerificationCodeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>
+        }
+        findFirst: {
+          args: Prisma.VerificationCodeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.VerificationCodeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>
+        }
+        findMany: {
+          args: Prisma.VerificationCodeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>[]
+        }
+        create: {
+          args: Prisma.VerificationCodeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>
+        }
+        createMany: {
+          args: Prisma.VerificationCodeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.VerificationCodeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>[]
+        }
+        delete: {
+          args: Prisma.VerificationCodeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>
+        }
+        update: {
+          args: Prisma.VerificationCodeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>
+        }
+        deleteMany: {
+          args: Prisma.VerificationCodeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.VerificationCodeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.VerificationCodeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>[]
+        }
+        upsert: {
+          args: Prisma.VerificationCodeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$VerificationCodePayload>
+        }
+        aggregate: {
+          args: Prisma.VerificationCodeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateVerificationCode>
+        }
+        groupBy: {
+          args: Prisma.VerificationCodeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.VerificationCodeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.VerificationCodeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.VerificationCodeCountAggregateOutputType> | number
         }
       }
     }
@@ -748,11 +823,27 @@ export const UserScalarFieldEnum = {
   lastName: 'lastName',
   email: 'email',
   password: 'password',
+  emailVerified: 'emailVerified',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const VerificationCodeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  purpose: 'purpose',
+  codeHash: 'codeHash',
+  attempts: 'attempts',
+  maxAttempts: 'maxAttempts',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type VerificationCodeScalarFieldEnum = (typeof VerificationCodeScalarFieldEnum)[keyof typeof VerificationCodeScalarFieldEnum]
 
 
 export const CategoryScalarFieldEnum = {
@@ -856,6 +947,13 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -866,6 +964,20 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'VerificationPurpose'
+ */
+export type EnumVerificationPurposeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VerificationPurpose'>
+    
+
+
+/**
+ * Reference to a field of type 'VerificationPurpose[]'
+ */
+export type ListEnumVerificationPurposeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VerificationPurpose[]'>
     
 
 
@@ -1006,6 +1118,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  verificationCode?: Prisma.VerificationCodeOmit
   category?: Prisma.CategoryOmit
   transaction?: Prisma.TransactionOmit
   budget?: Prisma.BudgetOmit

@@ -18,4 +18,18 @@ export class UserRepository implements IUserRepository {
     });
     return response;
   }
+
+  async markEmailVerified(userId: number): Promise<IUser> {
+    return this.db.user.update({
+      where: { id: userId },
+      data: { emailVerified: true },
+    });
+  }
+
+  async updatePassword(userId: number, password: string): Promise<IUser> {
+    return this.db.user.update({
+      where: { id: userId },
+      data: { password },
+    });
+  }
 }

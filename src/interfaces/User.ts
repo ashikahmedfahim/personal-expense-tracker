@@ -4,6 +4,7 @@ export interface IUser {
   lastName: string;
   email: string;
   password: string;
+  emailVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,4 +27,23 @@ export interface IUserCreateInput {
 export interface IUserLoginInput {
   email: string;
   password: string;
+}
+
+export interface IVerifyEmailInput {
+  email: string;
+  code: string;
+}
+
+export interface IForgotPasswordInput {
+  email: string;
+}
+
+export interface IResetPasswordInput {
+  email: string;
+  code: string;
+  password: string;
+}
+
+export interface IResendVerificationInput {
+  email: string;
 }
