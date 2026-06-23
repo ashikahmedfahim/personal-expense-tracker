@@ -4,6 +4,7 @@ import type { IBudgetRepository } from '../interfaces/repositories/IBudgetReposi
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 import type {
   IDailyExpenseTotal,
+  ICurrentMonthTransactionOverview,
   ITransaction,
   ITransactionCreateInput,
   ITransactionDailyAmount,
@@ -42,6 +43,94 @@ export class TransactionService implements ITransactionService {
       CURRENT_MONTH_TRANSACTION_LIMIT,
     );
     return this.groupByCategory(items);
+  }
+
+  async getCurrentMonthOverview(userId: number): Promise<ICurrentMonthTransactionOverview> {
+    const referenceDate: Date = new Date();
+    const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange(referenceDate);
+    const [inflowByCategory, outflowByCategory, savingsByCategory, totalIncome, totalExpenses, totalSavings] =
+      await Promise.all([
+        this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
+          userId,
+          FlowType.INFLOW,
+          start,
+          end,
+        ),
+        this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
+          userId,
+          FlowType.OUTFLOW,
+          start,
+          end,
+        ),
+        this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
+          userId,
+          FlowType.SAVINGS,
+          start,
+          end,
+        ),
+        this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+          userId,
+          FlowType.INFLOW,
+          start,
+          end,
+        ),
+        this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+          userId,
+          FlowType.OUTFLOW,
+          start,
+          end,
+        ),
+        this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+          userId,
+          FlowType.SAVINGS,
+          start,
+          end,
+        ),
+      ]);
+
+    const categoryIds = new Set<number>([
+      ...inflowByCategory.map((item) => item.categoryId),
+      ...outflowByCategory.map((item) => item.categoryId),
+      ...savingsByCategory.map((item) => item.categoryId),
+    ]);
+
+    const totalsByCategoryId = new Map<number, number>([
+      ...inflowByCategory.map((item) => [item.categoryId, item.total] as const),
+      ...outflowByCategory.map((item) => [item.categoryId, item.total] as const),
+      ...savingsByCategory.map((item) => [item.categoryId, item.total] as const),
+    ]);
+
+    const categories = await Promise.all(
+      [...categoryIds].map(async (categoryId) => {
+        const category = await this.categoryRepository.findByIdAndUserId(categoryId, userId);
+        if (!category) {
+          return null;
+        }
+
+        return {
+          category: {
+            id: category.id,
+            name: category.name,
+            flowType: category.flowType,
+            order: category.order,
+          },
+          total: totalsByCategoryId.get(categoryId) ?? 0,
+        };
+      }),
+    );
+
+    return {
+      month: formatUtcMonthKey(referenceDate),
+      summary: {
+        totalIncome,
+        totalExpenses,
+        totalSavings,
+        netBalance: totalIncome - totalExpenses - totalSavings,
+      },
+      categories: categories
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => a.category.order - b.category.order),
+    };
   }
 
   async getCurrentMonthDailyTotals(userId: number): Promise<IDailyExpenseTotal[]> {

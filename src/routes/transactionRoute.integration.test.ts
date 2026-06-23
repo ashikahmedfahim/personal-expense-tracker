@@ -7,6 +7,7 @@ import { JWT } from '../utils/JWT.js';
 
 const mockListRecent = vi.fn();
 const mockListCurrentMonth = vi.fn();
+const mockGetCurrentMonthOverview = vi.fn();
 const mockGetCurrentMonthDailyTotals = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
@@ -29,6 +30,7 @@ vi.mock('../services/transactionService.js', () => ({
     return {
       listRecent: mockListRecent,
       listCurrentMonth: mockListCurrentMonth,
+      getCurrentMonthOverview: mockGetCurrentMonthOverview,
       getCurrentMonthDailyTotals: mockGetCurrentMonthDailyTotals,
       create: mockCreate,
       update: mockUpdate,
@@ -153,6 +155,33 @@ describe('Transaction routes (authenticated)', () => {
         data: serializedGroupedCurrentMonth,
       });
       expect(mockListCurrentMonth).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('GET /v1/transactions/current-month/overview', () => {
+    it('returns 200 with current month transaction totals', async () => {
+      const overview = {
+        month: '2024-06',
+        summary: {
+          totalIncome: 17000,
+          totalExpenses: 12000,
+          totalSavings: 0,
+          netBalance: 5000,
+        },
+        categories: [],
+      };
+      mockGetCurrentMonthOverview.mockResolvedValue(overview);
+
+      const response = await request(app)
+        .get('/v1/transactions/current-month/overview')
+        .set(authHeader);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        message: null,
+        data: overview,
+      });
+      expect(mockGetCurrentMonthOverview).toHaveBeenCalledWith(1);
     });
   });
 

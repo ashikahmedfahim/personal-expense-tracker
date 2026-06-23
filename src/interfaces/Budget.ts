@@ -35,19 +35,12 @@ export interface IBudgetWithCategory {
 export interface ICurrentMonthBudgetItem {
   budget: IBudget;
   category: IBudgetCategorySummary;
-  spent: number;
-  earned: number;
-  remaining: number;
 }
 
 export interface ICurrentMonthBudgetSummary {
-  totalIncome: number;
   totalExpenses: number;
   totalSavings: number;
-  netBalance: number;
   totalBudget: number;
-  totalSpent: number;
-  remaining: number;
 }
 
 export interface ICurrentMonthBudgetOverview {
@@ -63,16 +56,9 @@ export interface IOverallBudgetAllocation {
 
 export interface IOverallBudgetView {
   month: string;
-  totalIncome: number;
   totalExpenses: number;
   totalSavings: number;
-  totalAllocated: number;
-  netBalance: number;
-  plannedIncome: number;
-  plannedAllocated: number;
-  plannedSavings: number;
-  plannedNetBalance: number;
-  income: IOverallBudgetAllocation[];
+  totalBudget: number;
   allocations: IOverallBudgetAllocation[];
   savings: IOverallBudgetAllocation[];
 }

@@ -60,6 +60,7 @@ describe('TransactionController', () => {
     transactionService = {
       listRecent: vi.fn(),
       listCurrentMonth: vi.fn(),
+      getCurrentMonthOverview: vi.fn(),
       getCurrentMonthDailyTotals: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),

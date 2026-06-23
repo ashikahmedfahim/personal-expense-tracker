@@ -75,3 +75,21 @@ export interface ICategorySpendingTotal {
   categoryId: number;
   total: number;
 }
+
+export interface ITransactionOverviewCategoryTotal {
+  category: Pick<ICurrentMonthCategoryWithTransactions, 'id' | 'name' | 'flowType' | 'order'>;
+  total: number;
+}
+
+export interface ICurrentMonthTransactionSummary {
+  totalIncome: number;
+  totalExpenses: number;
+  totalSavings: number;
+  netBalance: number;
+}
+
+export interface ICurrentMonthTransactionOverview {
+  month: string;
+  summary: ICurrentMonthTransactionSummary;
+  categories: ITransactionOverviewCategoryTotal[];
+}

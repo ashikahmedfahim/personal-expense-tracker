@@ -78,17 +78,13 @@ describe('Budget routes (authenticated)', () => {
   });
 
   describe('GET /v1/budgets/current-month', () => {
-    it('returns 200 with current month budgets and spending', async () => {
+    it('returns 200 with current month budgets only', async () => {
       const overview = {
         month: '2024-06',
         summary: {
-          totalIncome: 15000,
           totalExpenses: 500,
           totalSavings: 0,
-          netBalance: 14680,
           totalBudget: 500,
-          totalSpent: 320,
-          remaining: 14500,
         },
         budgets: [
           {
@@ -99,9 +95,6 @@ describe('Budget routes (authenticated)', () => {
               flowType: FlowType.OUTFLOW,
               order: 1,
             },
-            spent: 320,
-            earned: 0,
-            remaining: 180,
           },
         ],
       };
@@ -121,29 +114,12 @@ describe('Budget routes (authenticated)', () => {
   });
 
   describe('GET /v1/budgets/current-month/overall', () => {
-    it('returns 200 with current month actual totals and planned budget allocations', async () => {
+    it('returns 200 with current month budget allocations only', async () => {
       const overall = {
         month: '2024-06',
-        totalIncome: 15000,
-        totalExpenses: 14000,
-        totalSavings: 529,
-        totalAllocated: 14000,
-        netBalance: 471,
-        plannedIncome: 100,
-        plannedAllocated: 95,
-        plannedSavings: 5,
-        plannedNetBalance: 0,
-        income: [
-          {
-            category: {
-              id: 4,
-              name: 'Salary',
-              flowType: FlowType.INFLOW,
-              order: 0,
-            },
-            amount: 100,
-          },
-        ],
+        totalExpenses: 20,
+        totalSavings: 0,
+        totalBudget: 20,
         allocations: [
           {
             category: {

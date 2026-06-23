@@ -33,6 +33,13 @@ export class TransactionController extends BaseController implements ITransactio
     }, next);
   }
 
+  async getCurrentMonthOverview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    await this.handleRequest(async () => {
+      const overview = await this.transactionService.getCurrentMonthOverview(req.user!.id);
+      this.ok(res, overview);
+    }, next);
+  }
+
   async getCurrentMonthDailyTotals(req: Request, res: Response, next: NextFunction): Promise<void> {
     await this.handleRequest(async () => {
       const totals: IDailyExpenseTotal[] = await this.transactionService.getCurrentMonthDailyTotals(req.user!.id);

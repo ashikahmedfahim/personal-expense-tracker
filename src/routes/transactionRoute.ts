@@ -23,6 +23,10 @@ router.get(
   transactionController.listCurrentMonthTransactions.bind(transactionController),
 );
 router.get(
+  '/current-month/overview',
+  transactionController.getCurrentMonthOverview.bind(transactionController),
+);
+router.get(
   '/current-month/daily-totals',
   transactionController.getCurrentMonthDailyTotals.bind(transactionController),
 );

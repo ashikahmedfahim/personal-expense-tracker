@@ -7,6 +7,7 @@ import type { IBudgetRepository } from '../interfaces/repositories/IBudgetReposi
 import type { ITransactionRepository } from '../interfaces/repositories/ITransactionRepository.js';
 import type {
   IDailyExpenseTotal,
+  ICurrentMonthTransactionOverview,
   ITransaction,
   ITransactionCreateInput,
   ITransactionUpdateInput,
@@ -170,6 +171,71 @@ describe('TransactionService', () => {
           },
         },
       ]);
+      vi.useRealTimers();
+    });
+  });
+
+  describe('getCurrentMonthOverview', () => {
+    const incomeCategory: ICategory = {
+      ...category,
+      id: 4,
+      name: 'Salary',
+      flowType: FlowType.INFLOW,
+      order: 0,
+    };
+
+    it('returns current month transaction totals only', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-06-15T12:00:00.000Z'));
+      vi.mocked(transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId)
+        .mockImplementation(async (_userId, flowType) => {
+          if (flowType === FlowType.INFLOW) return [{ categoryId: 4, total: 17000 }];
+          if (flowType === FlowType.OUTFLOW) return [{ categoryId: 3, total: 12000 }];
+          return [];
+        });
+      vi.mocked(transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId)
+        .mockImplementation(async (_userId, flowType) => {
+          if (flowType === FlowType.INFLOW) return 17000;
+          if (flowType === FlowType.OUTFLOW) return 12000;
+          return 0;
+        });
+      vi.mocked(categoryRepository.findByIdAndUserId).mockImplementation(async (id) => {
+        if (id === 4) return incomeCategory;
+        if (id === 3) return category;
+        return null;
+      });
+
+      const result: ICurrentMonthTransactionOverview = await transactionService.getCurrentMonthOverview(userId);
+
+      expect(result).toEqual({
+        month: '2024-06',
+        summary: {
+          totalIncome: 17000,
+          totalExpenses: 12000,
+          totalSavings: 0,
+          netBalance: 5000,
+        },
+        categories: [
+          {
+            category: {
+              id: 4,
+              name: 'Salary',
+              flowType: FlowType.INFLOW,
+              order: 0,
+            },
+            total: 17000,
+          },
+          {
+            category: {
+              id: 3,
+              name: 'Food',
+              flowType: FlowType.OUTFLOW,
+              order: 1,
+            },
+            total: 12000,
+          },
+        ],
+      });
       vi.useRealTimers();
     });
   });

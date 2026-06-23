@@ -58,90 +58,29 @@ export class BudgetService implements IBudgetService {
   async getCurrentMonthOverview(userId: number): Promise<ICurrentMonthBudgetOverview> {
     const referenceDate: Date = new Date();
     const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange(referenceDate);
-    const [
-      budgetsWithCategories,
-      outflowSpending,
-      savingsSpending,
-      totalIncome,
-      spentOutflow,
-      spentSavings,
-    ] = await Promise.all([
-      this.budgetRepository.findAllByUserIdInMonth(userId, start, end),
-      this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
-        userId,
-        FlowType.OUTFLOW,
-        start,
-        end,
-      ),
-      this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
-        userId,
-        FlowType.SAVINGS,
-        start,
-        end,
-      ),
-      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
-        userId,
-        FlowType.INFLOW,
-        start,
-        end,
-      ),
-      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
-        userId,
-        FlowType.OUTFLOW,
-        start,
-        end,
-      ),
-      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
-        userId,
-        FlowType.SAVINGS,
-        start,
-        end,
-      ),
-    ]);
+    const budgetsWithCategories = await this.budgetRepository.findAllByUserIdInMonth(userId, start, end);
 
-    const spentByCategoryId = new Map<number, number>([
-      ...outflowSpending.map((item) => [item.categoryId, item.total] as const),
-      ...savingsSpending.map((item) => [item.categoryId, item.total] as const),
-    ]);
-
-    let allocatedOutflow = 0;
-    let allocatedSavings = 0;
-    let totalSpent = 0;
+    let totalExpenses = 0;
+    let totalSavings = 0;
 
     const budgets = budgetsWithCategories
       .filter(({ category }) => category.flowType !== FlowType.INFLOW)
       .map(({ budget, category }) => {
-        const spent: number = spentByCategoryId.get(budget.categoryId) ?? 0;
-        totalSpent += spent;
-
         if (category.flowType === FlowType.SAVINGS) {
-          allocatedSavings += budget.amount;
+          totalSavings += budget.amount;
         } else {
-          allocatedOutflow += budget.amount;
+          totalExpenses += budget.amount;
         }
 
-        return {
-          budget,
-          category,
-          spent,
-          earned: 0,
-          remaining: budget.amount - spent,
-        };
+        return { budget, category };
       });
-
-    const netBalance: number = totalIncome - spentOutflow - spentSavings;
-    const remaining: number = totalIncome - allocatedOutflow - allocatedSavings;
 
     return {
       month: formatUtcMonthKey(referenceDate),
       summary: {
-        totalIncome,
-        totalExpenses: allocatedOutflow,
-        totalSavings: allocatedSavings,
-        netBalance,
-        totalBudget: allocatedOutflow + allocatedSavings,
-        totalSpent,
-        remaining,
+        totalExpenses,
+        totalSavings,
+        totalBudget: totalExpenses + totalSavings,
       },
       budgets,
     };
@@ -150,42 +89,20 @@ export class BudgetService implements IBudgetService {
   async getCurrentMonthOverall(userId: number): Promise<IOverallBudgetView> {
     const referenceDate: Date = new Date();
     const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange(referenceDate);
-    const [budgetsWithCategories, actualIncome, actualExpenses, actualSavings] = await Promise.all([
-      this.budgetRepository.findAllByUserIdInMonth(userId, start, end),
-      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
-        userId,
-        FlowType.INFLOW,
-        start,
-        end,
-      ),
-      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
-        userId,
-        FlowType.OUTFLOW,
-        start,
-        end,
-      ),
-      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
-        userId,
-        FlowType.SAVINGS,
-        start,
-        end,
-      ),
-    ]);
+    const budgetsWithCategories = await this.budgetRepository.findAllByUserIdInMonth(userId, start, end);
 
-    const income: IOverallBudgetAllocation[] = [];
     const allocations: IOverallBudgetAllocation[] = [];
     const savings: IOverallBudgetAllocation[] = [];
 
     for (const { budget, category } of budgetsWithCategories) {
+      if (category.flowType === FlowType.INFLOW) {
+        continue;
+      }
+
       const item: IOverallBudgetAllocation = {
         category,
         amount: budget.amount,
       };
-
-      if (category.flowType === FlowType.INFLOW) {
-        income.push(item);
-        continue;
-      }
 
       if (category.flowType === FlowType.SAVINGS) {
         savings.push(item);
@@ -195,21 +112,14 @@ export class BudgetService implements IBudgetService {
       allocations.push(item);
     }
 
-    const plannedAllocated: number = allocations.reduce((sum, item) => sum + item.amount, 0);
-    const plannedSavings: number = savings.reduce((sum, item) => sum + item.amount, 0);
+    const totalExpenses: number = allocations.reduce((sum, item) => sum + item.amount, 0);
+    const totalSavings: number = savings.reduce((sum, item) => sum + item.amount, 0);
 
     return {
       month: formatUtcMonthKey(referenceDate),
-      totalIncome: actualIncome,
-      totalExpenses: actualExpenses,
-      totalSavings: actualSavings,
-      totalAllocated: actualExpenses,
-      netBalance: actualIncome - actualExpenses - actualSavings,
-      plannedIncome: actualIncome,
-      plannedAllocated,
-      plannedSavings,
-      plannedNetBalance: actualIncome - plannedAllocated - plannedSavings,
-      income,
+      totalExpenses,
+      totalSavings,
+      totalBudget: totalExpenses + totalSavings,
       allocations,
       savings,
     };

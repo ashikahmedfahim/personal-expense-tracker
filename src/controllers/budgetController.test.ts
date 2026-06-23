@@ -87,13 +87,9 @@ describe('BudgetController', () => {
     const overview: ICurrentMonthBudgetOverview = {
       month: '2024-06',
       summary: {
-        totalIncome: 15000,
         totalExpenses: 500,
         totalSavings: 0,
-        netBalance: 14680,
         totalBudget: 500,
-        totalSpent: 320,
-        remaining: 14500,
       },
       budgets: [
         {
@@ -104,9 +100,6 @@ describe('BudgetController', () => {
             flowType: FlowType.OUTFLOW,
             order: 1,
           },
-          spent: 320,
-          earned: 0,
-          remaining: 180,
         },
       ],
     };
@@ -124,26 +117,9 @@ describe('BudgetController', () => {
   it('returns current month overall budget allocation', async () => {
     const overall: IOverallBudgetView = {
       month: '2024-06',
-      totalIncome: 15000,
-      totalExpenses: 14000,
-      totalSavings: 529,
-      totalAllocated: 14000,
-      netBalance: 471,
-      plannedIncome: 100,
-      plannedAllocated: 95,
-      plannedSavings: 5,
-      plannedNetBalance: 0,
-      income: [
-        {
-          category: {
-            id: 4,
-            name: 'Salary',
-            flowType: FlowType.INFLOW,
-            order: 0,
-          },
-          amount: 100,
-        },
-      ],
+      totalExpenses: 20,
+      totalSavings: 0,
+      totalBudget: 20,
       allocations: [
         {
           category: {

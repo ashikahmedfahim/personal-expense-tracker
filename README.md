@@ -225,6 +225,7 @@ Authorization: Bearer <token>
 |--------|------|-------------|
 | `GET` | `/v1/transactions` | Last 10 transactions (all categories, newest first) |
 | `GET` | `/v1/transactions/current-month` | Up to 20 transactions in the current UTC month, grouped by category |
+| `GET` | `/v1/transactions/current-month/overview` | Current month totals from **transactions only** (income, expenses, savings, net balance) |
 | `GET` | `/v1/transactions/current-month/daily-totals` | Total outflow expense per day for the current UTC month (for line charts) |
 | `POST` | `/v1/transactions` | Create transaction (`status` always `COMPLETED`; not accepted in body) |
 | `PATCH` | `/v1/transactions/:id` | Update transaction (partial body) |
@@ -292,12 +293,53 @@ Groups are sorted by category `order`. Only the 20 most recent transactions in t
 
 Only **completed** transactions on **OUTFLOW** categories are included. Dates are UTC (`YYYY-MM-DD`).
 
+**Current month transaction overview** — totals from completed transactions only:
+
+```json
+{
+  "message": null,
+  "data": {
+    "month": "2024-06",
+    "summary": {
+      "totalIncome": 17000,
+      "totalExpenses": 12000,
+      "totalSavings": 0,
+      "netBalance": 5000
+    },
+    "categories": [
+      {
+        "category": {
+          "id": 4,
+          "name": "Salary",
+          "flowType": "INFLOW",
+          "order": 0
+        },
+        "total": 17000
+      },
+      {
+        "category": {
+          "id": 3,
+          "name": "Food",
+          "flowType": "OUTFLOW",
+          "order": 1
+        },
+        "total": 12000
+      }
+    ]
+  }
+}
+```
+
+- `summary.totalIncome` / `summary.totalExpenses` / `summary.totalSavings` — sums of completed transactions by flow type
+- `summary.netBalance` — `totalIncome - totalExpenses - totalSavings`
+- Use this endpoint for **actual money in/out** (transaction overview)
+
 #### Budgets (`/v1/budgets`)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/v1/budgets/current-month` | All budgets for the current UTC month with per-category spending |
-| `GET` | `/v1/budgets/current-month/overall` | Overall budget view: actual transaction totals plus planned budget allocations |
+| `GET` | `/v1/budgets/current-month` | Current month **budget** overview (allocated amounts only) |
+| `GET` | `/v1/budgets/current-month/overall` | Budget allocation breakdown (OUTFLOW + SAVINGS budgets) |
 | `POST` | `/v1/budgets` | Create monthly budget for a category |
 | `PATCH` | `/v1/budgets/:id` | Update budget amount only |
 | `DELETE` | `/v1/budgets/:id` | Delete budget |
@@ -329,7 +371,7 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 }
 ```
 
-**Current month overview response shape** — calculated at request time from live budgets and completed transactions:
+**Current month budget overview** — from **budget amounts only** (no transactions):
 
 ```json
 {
@@ -337,13 +379,9 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
   "data": {
     "month": "2024-06",
     "summary": {
-      "totalIncome": 15000,
-      "totalExpenses": 700,
-      "totalSavings": 0,
-      "netBalance": 14630,
-      "totalBudget": 700,
-      "totalSpent": 370,
-      "remaining": 14300
+      "totalExpenses": 12000,
+      "totalSavings": 5000,
+      "totalBudget": 17000
     },
     "budgets": [
       {
@@ -361,73 +399,29 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
           "name": "Food",
           "flowType": "OUTFLOW",
           "order": 1
-        },
-        "spent": 320,
-        "earned": 0,
-        "remaining": 180
-      },
-      {
-        "budget": {
-          "id": 2,
-          "amount": 200,
-          "date": "2024-06-01T00:00:00.000Z",
-          "categoryId": 5,
-          "userId": 1,
-          "createdAt": "2024-01-01T00:00:00.000Z",
-          "updatedAt": "2024-01-01T00:00:00.000Z"
-        },
-        "category": {
-          "id": 5,
-          "name": "Transport",
-          "flowType": "OUTFLOW",
-          "order": 2
-        },
-        "spent": 50,
-        "earned": 0,
-        "remaining": 150
+        }
       }
     ]
   }
 }
 ```
 
-- `summary.totalIncome` — sum of completed **INFLOW** transactions this month
-- `summary.totalExpenses` — sum of **OUTFLOW** budget amounts (allocated)
-- `summary.totalSavings` — sum of **SAVINGS** budget amounts (allocated)
-- `summary.remaining` — unallocated from budgets: `totalIncome - totalExpenses - totalSavings`
-- `summary.netBalance` — from transactions: `totalIncome - spentOutflow - spentSavings`
-- `summary.totalBudget` — `totalExpenses + totalSavings` (total allocated)
-- `summary.totalSpent` — sum of completed **OUTFLOW + SAVINGS** transactions
-- `spent` / `remaining` on each row — actual spending vs that category's budget
-- Budget rows include **OUTFLOW** and **SAVINGS** categories only (no income budgets)
+- `summary.totalExpenses` — sum of **OUTFLOW** budget amounts
+- `summary.totalSavings` — sum of **SAVINGS** budget amounts
+- `summary.totalBudget` — `totalExpenses + totalSavings`
+- Unallocated in the UI: `transactionOverview.totalIncome - budgetOverview.totalBudget`
+- Budget rows include **OUTFLOW** and **SAVINGS** categories only
 
-**Overall budget response shape** — actual income/expenses from completed transactions, plus planned budget allocations:
+**Overall budget response shape** — budget allocations grouped by type:
 
 ```json
 {
   "message": null,
   "data": {
     "month": "2024-06",
-    "totalIncome": 15000,
-    "totalExpenses": 14000,
-    "totalSavings": 529,
-    "totalAllocated": 14000,
-    "netBalance": 471,
-    "plannedIncome": 100,
-    "plannedAllocated": 95,
-    "plannedSavings": 5,
-    "plannedNetBalance": 0,
-    "income": [
-      {
-        "category": {
-          "id": 4,
-          "name": "Salary",
-          "flowType": "INFLOW",
-          "order": 0
-        },
-        "amount": 100
-      }
-    ],
+    "totalExpenses": 95,
+    "totalSavings": 5,
+    "totalBudget": 100,
     "allocations": [
       {
         "category": {
@@ -437,24 +431,6 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
           "order": 1
         },
         "amount": 20
-      },
-      {
-        "category": {
-          "id": 5,
-          "name": "Rent",
-          "flowType": "OUTFLOW",
-          "order": 2
-        },
-        "amount": 70
-      },
-      {
-        "category": {
-          "id": 6,
-          "name": "Bus",
-          "flowType": "OUTFLOW",
-          "order": 3
-        },
-        "amount": 5
       }
     ],
     "savings": [
@@ -472,16 +448,9 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 }
 ```
 
-- `totalIncome` — sum of completed **INFLOW** transactions this month
-- `totalExpenses` — sum of completed **OUTFLOW** transactions this month
-- `totalSavings` — sum of completed **SAVINGS** transactions this month
-- `totalAllocated` — same as `totalExpenses` (kept for backward compatibility)
-- `netBalance` — `totalIncome - totalExpenses - totalSavings`
-- `plannedIncome` — same as `totalIncome` (actual INFLOW transactions; no income budgets)
-- `plannedAllocated` — sum of **OUTFLOW** category budgets
-- `plannedSavings` — sum of **SAVINGS** category budgets
-- `plannedNetBalance` — unallocated: `totalIncome - plannedAllocated - plannedSavings`
-- `income` / `allocations` / `savings` — per-category **budget** amounts (planned), sorted by category `order`
+- `totalExpenses` — sum of **OUTFLOW** budgets
+- `totalSavings` — sum of **SAVINGS** budgets
+- `totalBudget` — `totalExpenses + totalSavings`
 
 ### Common HTTP status codes
 
