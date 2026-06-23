@@ -82,9 +82,13 @@ describe('Budget routes (authenticated)', () => {
       const overview = {
         month: '2024-06',
         summary: {
+          totalIncome: 15000,
+          totalExpenses: 320,
+          totalSavings: 0,
+          netBalance: 14680,
           totalBudget: 500,
           totalSpent: 320,
-          remaining: 180,
+          remaining: 14680,
         },
         budgets: [
           {
@@ -96,6 +100,7 @@ describe('Budget routes (authenticated)', () => {
               order: 1,
             },
             spent: 320,
+            earned: 0,
             remaining: 180,
           },
         ],

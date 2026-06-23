@@ -54,8 +54,22 @@ export class BudgetService implements IBudgetService {
   async getCurrentMonthOverview(userId: number): Promise<ICurrentMonthBudgetOverview> {
     const referenceDate: Date = new Date();
     const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange(referenceDate);
-    const [budgetsWithCategories, outflowSpending, savingsSpending] = await Promise.all([
+    const [
+      budgetsWithCategories,
+      inflowEarned,
+      outflowSpending,
+      savingsSpending,
+      totalIncome,
+      totalExpenses,
+      totalSavings,
+    ] = await Promise.all([
       this.budgetRepository.findAllByUserIdInMonth(userId, start, end),
+      this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
+        userId,
+        FlowType.INFLOW,
+        start,
+        end,
+      ),
       this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
         userId,
         FlowType.OUTFLOW,
@@ -68,8 +82,29 @@ export class BudgetService implements IBudgetService {
         start,
         end,
       ),
+      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+        userId,
+        FlowType.INFLOW,
+        start,
+        end,
+      ),
+      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+        userId,
+        FlowType.OUTFLOW,
+        start,
+        end,
+      ),
+      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+        userId,
+        FlowType.SAVINGS,
+        start,
+        end,
+      ),
     ]);
 
+    const earnedByCategoryId = new Map<number, number>(
+      inflowEarned.map((item) => [item.categoryId, item.total]),
+    );
     const spentByCategoryId = new Map<number, number>([
       ...outflowSpending.map((item) => [item.categoryId, item.total] as const),
       ...savingsSpending.map((item) => [item.categoryId, item.total] as const),
@@ -79,25 +114,37 @@ export class BudgetService implements IBudgetService {
     let totalSpent = 0;
 
     const budgets = budgetsWithCategories.map(({ budget, category }) => {
+      const earned: number =
+        category.flowType === FlowType.INFLOW ? (earnedByCategoryId.get(budget.categoryId) ?? 0) : 0;
       const spent: number =
         category.flowType === FlowType.INFLOW ? 0 : (spentByCategoryId.get(budget.categoryId) ?? 0);
-      totalBudget += budget.amount;
-      totalSpent += spent;
+
+      if (category.flowType !== FlowType.INFLOW) {
+        totalBudget += budget.amount;
+        totalSpent += spent;
+      }
 
       return {
         budget,
         category,
         spent,
-        remaining: budget.amount - spent,
+        earned,
+        remaining: budget.amount - (category.flowType === FlowType.INFLOW ? earned : spent),
       };
     });
+
+    const netBalance: number = totalIncome - totalExpenses - totalSavings;
 
     return {
       month: formatUtcMonthKey(referenceDate),
       summary: {
+        totalIncome,
+        totalExpenses,
+        totalSavings,
+        netBalance,
         totalBudget,
         totalSpent,
-        remaining: totalBudget - totalSpent,
+        remaining: netBalance,
       },
       budgets,
     };

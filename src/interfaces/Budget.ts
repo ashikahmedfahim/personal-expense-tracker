@@ -36,10 +36,15 @@ export interface ICurrentMonthBudgetItem {
   budget: IBudget;
   category: IBudgetCategorySummary;
   spent: number;
+  earned: number;
   remaining: number;
 }
 
 export interface ICurrentMonthBudgetSummary {
+  totalIncome: number;
+  totalExpenses: number;
+  totalSavings: number;
+  netBalance: number;
   totalBudget: number;
   totalSpent: number;
   remaining: number;
