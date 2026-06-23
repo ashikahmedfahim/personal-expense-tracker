@@ -83,12 +83,12 @@ describe('Budget routes (authenticated)', () => {
         month: '2024-06',
         summary: {
           totalIncome: 15000,
-          totalExpenses: 320,
+          totalExpenses: 500,
           totalSavings: 0,
           netBalance: 14680,
           totalBudget: 500,
           totalSpent: 320,
-          remaining: 14680,
+          remaining: 14500,
         },
         budgets: [
           {

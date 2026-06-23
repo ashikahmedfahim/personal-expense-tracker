@@ -27,6 +27,10 @@ export class BudgetService implements IBudgetService {
       throw new AppError(404, 'Category not found');
     }
 
+    if (category.flowType === FlowType.INFLOW) {
+      throw new AppError(400, 'Income is tracked via transactions, not budgets');
+    }
+
     const referenceDate: Date = data.date ?? new Date();
     const monthStart: Date = normalizeToMonthStartUtc(referenceDate);
     const { start, end }: { start: Date; end: Date } = getMonthUtcRange(referenceDate);
@@ -56,20 +60,13 @@ export class BudgetService implements IBudgetService {
     const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange(referenceDate);
     const [
       budgetsWithCategories,
-      inflowEarned,
       outflowSpending,
       savingsSpending,
       totalIncome,
-      totalExpenses,
-      totalSavings,
+      spentOutflow,
+      spentSavings,
     ] = await Promise.all([
       this.budgetRepository.findAllByUserIdInMonth(userId, start, end),
-      this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
-        userId,
-        FlowType.INFLOW,
-        start,
-        end,
-      ),
       this.transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
         userId,
         FlowType.OUTFLOW,
@@ -102,49 +99,49 @@ export class BudgetService implements IBudgetService {
       ),
     ]);
 
-    const earnedByCategoryId = new Map<number, number>(
-      inflowEarned.map((item) => [item.categoryId, item.total]),
-    );
     const spentByCategoryId = new Map<number, number>([
       ...outflowSpending.map((item) => [item.categoryId, item.total] as const),
       ...savingsSpending.map((item) => [item.categoryId, item.total] as const),
     ]);
 
-    let totalBudget = 0;
+    let allocatedOutflow = 0;
+    let allocatedSavings = 0;
     let totalSpent = 0;
 
-    const budgets = budgetsWithCategories.map(({ budget, category }) => {
-      const earned: number =
-        category.flowType === FlowType.INFLOW ? (earnedByCategoryId.get(budget.categoryId) ?? 0) : 0;
-      const spent: number =
-        category.flowType === FlowType.INFLOW ? 0 : (spentByCategoryId.get(budget.categoryId) ?? 0);
-
-      if (category.flowType !== FlowType.INFLOW) {
-        totalBudget += budget.amount;
+    const budgets = budgetsWithCategories
+      .filter(({ category }) => category.flowType !== FlowType.INFLOW)
+      .map(({ budget, category }) => {
+        const spent: number = spentByCategoryId.get(budget.categoryId) ?? 0;
         totalSpent += spent;
-      }
 
-      return {
-        budget,
-        category,
-        spent,
-        earned,
-        remaining: budget.amount - (category.flowType === FlowType.INFLOW ? earned : spent),
-      };
-    });
+        if (category.flowType === FlowType.SAVINGS) {
+          allocatedSavings += budget.amount;
+        } else {
+          allocatedOutflow += budget.amount;
+        }
 
-    const netBalance: number = totalIncome - totalExpenses - totalSavings;
+        return {
+          budget,
+          category,
+          spent,
+          earned: 0,
+          remaining: budget.amount - spent,
+        };
+      });
+
+    const netBalance: number = totalIncome - spentOutflow - spentSavings;
+    const remaining: number = totalIncome - allocatedOutflow - allocatedSavings;
 
     return {
       month: formatUtcMonthKey(referenceDate),
       summary: {
         totalIncome,
-        totalExpenses,
-        totalSavings,
+        totalExpenses: allocatedOutflow,
+        totalSavings: allocatedSavings,
         netBalance,
-        totalBudget,
+        totalBudget: allocatedOutflow + allocatedSavings,
         totalSpent,
-        remaining: netBalance,
+        remaining,
       },
       budgets,
     };
@@ -198,7 +195,6 @@ export class BudgetService implements IBudgetService {
       allocations.push(item);
     }
 
-    const plannedIncome: number = income.reduce((sum, item) => sum + item.amount, 0);
     const plannedAllocated: number = allocations.reduce((sum, item) => sum + item.amount, 0);
     const plannedSavings: number = savings.reduce((sum, item) => sum + item.amount, 0);
 
@@ -209,10 +205,10 @@ export class BudgetService implements IBudgetService {
       totalSavings: actualSavings,
       totalAllocated: actualExpenses,
       netBalance: actualIncome - actualExpenses - actualSavings,
-      plannedIncome,
+      plannedIncome: actualIncome,
       plannedAllocated,
       plannedSavings,
-      plannedNetBalance: plannedIncome - plannedAllocated - plannedSavings,
+      plannedNetBalance: actualIncome - plannedAllocated - plannedSavings,
       income,
       allocations,
       savings,
@@ -228,6 +224,10 @@ export class BudgetService implements IBudgetService {
     const category = await this.categoryRepository.findByIdAndUserId(existing.categoryId, userId);
     if (!category) {
       throw new AppError(404, 'Category not found');
+    }
+
+    if (category.flowType === FlowType.INFLOW) {
+      throw new AppError(400, 'Income is tracked via transactions, not budgets');
     }
 
     const { start, end }: { start: Date; end: Date } = getMonthUtcRange(existing.date);
@@ -255,8 +255,22 @@ export class BudgetService implements IBudgetService {
     amount: number,
     excludeBudgetId?: number,
   ): Promise<void> {
-    const budgetsWithCategories = await this.budgetRepository.findAllByUserIdInMonth(userId, start, end);
-    const netBalance: number = this.calculateNetBalance(budgetsWithCategories, flowType, amount, excludeBudgetId);
+    const [budgetsWithCategories, actualIncome] = await Promise.all([
+      this.budgetRepository.findAllByUserIdInMonth(userId, start, end),
+      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+        userId,
+        FlowType.INFLOW,
+        start,
+        end,
+      ),
+    ]);
+    const netBalance: number = this.calculateNetBalance(
+      budgetsWithCategories,
+      flowType,
+      amount,
+      actualIncome,
+      excludeBudgetId,
+    );
 
     if (netBalance < 0) {
       throw new AppError(400, 'Budget allocation would result in a negative net balance');
@@ -267,9 +281,9 @@ export class BudgetService implements IBudgetService {
     budgetsWithCategories: Array<{ budget: IBudget; category: { flowType: FlowType } }>,
     flowType: FlowType,
     amount: number,
+    actualIncome: number,
     excludeBudgetId?: number,
   ): number {
-    let totalIncome = 0;
     let totalOutflow = 0;
     let totalSavings = 0;
 
@@ -278,23 +292,19 @@ export class BudgetService implements IBudgetService {
         continue;
       }
 
-      if (category.flowType === FlowType.INFLOW) {
-        totalIncome += budget.amount;
-      } else if (category.flowType === FlowType.SAVINGS) {
+      if (category.flowType === FlowType.SAVINGS) {
         totalSavings += budget.amount;
-      } else {
+      } else if (category.flowType === FlowType.OUTFLOW) {
         totalOutflow += budget.amount;
       }
     }
 
-    if (flowType === FlowType.INFLOW) {
-      totalIncome += amount;
-    } else if (flowType === FlowType.SAVINGS) {
+    if (flowType === FlowType.SAVINGS) {
       totalSavings += amount;
-    } else {
+    } else if (flowType === FlowType.OUTFLOW) {
       totalOutflow += amount;
     }
 
-    return totalIncome - totalOutflow - totalSavings;
+    return actualIncome - totalOutflow - totalSavings;
   }
 }

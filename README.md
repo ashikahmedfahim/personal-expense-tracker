@@ -305,9 +305,10 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 **Rules:**
 
 - Budgets are tied to a **category** (`categoryId`).
-- **INFLOW** budgets represent planned income; **OUTFLOW** budgets represent planned expenses; **SAVINGS** budgets represent planned savings.
+- **INFLOW** income is tracked via **transactions only** (no income budgets).
+- **OUTFLOW** and **SAVINGS** categories use monthly **budgets** (planned allocation).
 - **One budget per category per UTC month** (duplicate returns `409`).
-- **Net balance rule:** `inflow = outflow + savings + net balance`. Budget create/update is rejected if planned net balance would go negative.
+- **Net balance rule:** `income = outflow + savings + unallocated`. New OUTFLOW/SAVINGS budgets are rejected if their total would exceed actual INFLOW transactions this month.
 - Month is derived from optional `date` (defaults to current month); stored as the first day of that month (UTC).
 
 **Create body:**
@@ -337,34 +338,14 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
     "month": "2024-06",
     "summary": {
       "totalIncome": 15000,
-      "totalExpenses": 370,
+      "totalExpenses": 700,
       "totalSavings": 0,
       "netBalance": 14630,
       "totalBudget": 700,
       "totalSpent": 370,
-      "remaining": 14630
+      "remaining": 14300
     },
     "budgets": [
-      {
-        "budget": {
-          "id": 10,
-          "amount": 15000,
-          "date": "2024-06-01T00:00:00.000Z",
-          "categoryId": 4,
-          "userId": 1,
-          "createdAt": "2024-01-01T00:00:00.000Z",
-          "updatedAt": "2024-01-01T00:00:00.000Z"
-        },
-        "category": {
-          "id": 4,
-          "name": "Salary",
-          "flowType": "INFLOW",
-          "order": 0
-        },
-        "spent": 0,
-        "earned": 15000,
-        "remaining": 0
-      },
       {
         "budget": {
           "id": 1,
@@ -410,13 +391,15 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 }
 ```
 
-- `summary.totalIncome` / `summary.totalExpenses` / `summary.totalSavings` — sums of completed transactions this month (live)
-- `summary.netBalance` — `totalIncome - totalExpenses - totalSavings`
-- `summary.totalBudget` — sum of **OUTFLOW + SAVINGS** budget amounts (planned spending)
-- `summary.totalSpent` — sum of **OUTFLOW + SAVINGS** transaction amounts
-- `summary.remaining` — same as `netBalance` (unallocated income)
-- `earned` — completed **INFLOW** transactions for that category; `spent` — **OUTFLOW/SAVINGS** transactions
-- Budgets are sorted by category `order`. Per-category `remaining` can be negative if spending exceeds the budget.
+- `summary.totalIncome` — sum of completed **INFLOW** transactions this month
+- `summary.totalExpenses` — sum of **OUTFLOW** budget amounts (allocated)
+- `summary.totalSavings` — sum of **SAVINGS** budget amounts (allocated)
+- `summary.remaining` — unallocated from budgets: `totalIncome - totalExpenses - totalSavings`
+- `summary.netBalance` — from transactions: `totalIncome - spentOutflow - spentSavings`
+- `summary.totalBudget` — `totalExpenses + totalSavings` (total allocated)
+- `summary.totalSpent` — sum of completed **OUTFLOW + SAVINGS** transactions
+- `spent` / `remaining` on each row — actual spending vs that category's budget
+- Budget rows include **OUTFLOW** and **SAVINGS** categories only (no income budgets)
 
 **Overall budget response shape** — actual income/expenses from completed transactions, plus planned budget allocations:
 
@@ -494,10 +477,10 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 - `totalSavings` — sum of completed **SAVINGS** transactions this month
 - `totalAllocated` — same as `totalExpenses` (kept for backward compatibility)
 - `netBalance` — `totalIncome - totalExpenses - totalSavings`
-- `plannedIncome` — sum of **INFLOW** category budgets
+- `plannedIncome` — same as `totalIncome` (actual INFLOW transactions; no income budgets)
 - `plannedAllocated` — sum of **OUTFLOW** category budgets
 - `plannedSavings` — sum of **SAVINGS** category budgets
-- `plannedNetBalance` — `plannedIncome - plannedAllocated - plannedSavings`
+- `plannedNetBalance` — unallocated: `totalIncome - plannedAllocated - plannedSavings`
 - `income` / `allocations` / `savings` — per-category **budget** amounts (planned), sorted by category `order`
 
 ### Common HTTP status codes
