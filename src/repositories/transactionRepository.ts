@@ -97,6 +97,20 @@ export class TransactionRepository implements ITransactionRepository {
     start: Date,
     end: Date,
   ): Promise<ICategorySpendingTotal[]> {
+    return this.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
+      userId,
+      FlowType.OUTFLOW,
+      start,
+      end,
+    );
+  }
+
+  async sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
+    userId: number,
+    flowType: FlowType,
+    start: Date,
+    end: Date,
+  ): Promise<ICategorySpendingTotal[]> {
     const rows = await this.db.transaction.groupBy({
       by: ['categoryId'],
       where: {
@@ -107,7 +121,7 @@ export class TransactionRepository implements ITransactionRepository {
           lte: end,
         },
         category: {
-          flowType: FlowType.OUTFLOW,
+          flowType,
         },
       },
       _sum: {
@@ -129,6 +143,24 @@ export class TransactionRepository implements ITransactionRepository {
     end: Date,
     excludeTransactionId?: number,
   ): Promise<number> {
+    return this.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId(
+      userId,
+      categoryId,
+      FlowType.OUTFLOW,
+      start,
+      end,
+      excludeTransactionId,
+    );
+  }
+
+  async sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId(
+    userId: number,
+    categoryId: number,
+    flowType: FlowType,
+    start: Date,
+    end: Date,
+    excludeTransactionId?: number,
+  ): Promise<number> {
     const result = await this.db.transaction.aggregate({
       where: {
         userId,
@@ -139,7 +171,7 @@ export class TransactionRepository implements ITransactionRepository {
           lte: end,
         },
         category: {
-          flowType: FlowType.OUTFLOW,
+          flowType,
         },
         ...(excludeTransactionId !== undefined ? { id: { not: excludeTransactionId } } : {}),
       },

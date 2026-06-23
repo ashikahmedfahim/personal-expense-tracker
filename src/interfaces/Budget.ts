@@ -60,11 +60,14 @@ export interface IOverallBudgetView {
   month: string;
   totalIncome: number;
   totalExpenses: number;
+  totalSavings: number;
   totalAllocated: number;
   netBalance: number;
   plannedIncome: number;
   plannedAllocated: number;
+  plannedSavings: number;
   plannedNetBalance: number;
   income: IOverallBudgetAllocation[];
   allocations: IOverallBudgetAllocation[];
+  savings: IOverallBudgetAllocation[];
 }

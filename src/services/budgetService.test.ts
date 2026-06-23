@@ -76,7 +76,9 @@ describe('BudgetService', () => {
       findRecentInDateRangeByUserId: vi.fn(),
       findOutflowAmountsInDateRangeByUserId: vi.fn(),
       sumOutflowByCategoryInDateRangeByUserId: vi.fn(),
+      sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId: vi.fn(),
       sumOutflowAmountByCategoryIdInDateRangeByUserId: vi.fn(),
+      sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId: vi.fn(),
       sumCompletedAmountByFlowTypeInDateRangeByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
       create: vi.fn(),
@@ -240,10 +242,15 @@ describe('BudgetService', () => {
           category: transportCategory,
         },
       ]);
-      vi.mocked(transactionRepository.sumOutflowByCategoryInDateRangeByUserId).mockResolvedValue([
-        { categoryId: 3, total: 320 },
-        { categoryId: 5, total: 50 },
-      ]);
+      vi.mocked(transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId)
+        .mockImplementation(async (_userId, flowType) =>
+          flowType === FlowType.OUTFLOW
+            ? [
+                { categoryId: 3, total: 320 },
+                { categoryId: 5, total: 50 },
+              ]
+            : [],
+        );
 
       const result: ICurrentMonthBudgetOverview = await budgetService.getCurrentMonthOverview(userId);
 
@@ -252,8 +259,15 @@ describe('BudgetService', () => {
         new Date('2024-06-01T00:00:00.000Z'),
         new Date('2024-06-30T23:59:59.999Z'),
       );
-      expect(transactionRepository.sumOutflowByCategoryInDateRangeByUserId).toHaveBeenCalledWith(
+      expect(transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId).toHaveBeenCalledWith(
         userId,
+        FlowType.OUTFLOW,
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-06-30T23:59:59.999Z'),
+      );
+      expect(transactionRepository.sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId).toHaveBeenCalledWith(
+        userId,
+        FlowType.SAVINGS,
         new Date('2024-06-01T00:00:00.000Z'),
         new Date('2024-06-30T23:59:59.999Z'),
       );
@@ -334,13 +348,17 @@ describe('BudgetService', () => {
           category: {
             id: 7,
             name: 'Saving',
-            flowType: FlowType.OUTFLOW,
+            flowType: FlowType.SAVINGS,
             order: 4,
           },
         },
       ]);
       vi.mocked(transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId)
-        .mockImplementation(async (_userId, flowType) => (flowType === FlowType.INFLOW ? 15000 : 14529));
+        .mockImplementation(async (_userId, flowType) => {
+          if (flowType === FlowType.INFLOW) return 15000;
+          if (flowType === FlowType.OUTFLOW) return 14000;
+          return 529;
+        });
 
       const result: IOverallBudgetView = await budgetService.getCurrentMonthOverall(userId);
 
@@ -356,14 +374,22 @@ describe('BudgetService', () => {
         new Date('2024-06-01T00:00:00.000Z'),
         new Date('2024-06-30T23:59:59.999Z'),
       );
+      expect(transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId).toHaveBeenCalledWith(
+        userId,
+        FlowType.SAVINGS,
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-06-30T23:59:59.999Z'),
+      );
       expect(result).toEqual({
         month: '2024-06',
         totalIncome: 15000,
-        totalExpenses: 14529,
-        totalAllocated: 14529,
+        totalExpenses: 14000,
+        totalSavings: 529,
+        totalAllocated: 14000,
         netBalance: 471,
         plannedIncome: 100,
-        plannedAllocated: 100,
+        plannedAllocated: 95,
+        plannedSavings: 5,
         plannedNetBalance: 0,
         income: [
           {
@@ -404,11 +430,13 @@ describe('BudgetService', () => {
             },
             amount: 5,
           },
+        ],
+        savings: [
           {
             category: {
               id: 7,
               name: 'Saving',
-              flowType: FlowType.OUTFLOW,
+              flowType: FlowType.SAVINGS,
               order: 4,
             },
             amount: 5,
@@ -418,7 +446,7 @@ describe('BudgetService', () => {
       vi.useRealTimers();
     });
 
-    it('calculates planned net balance as income minus allocated outflow budgets', async () => {
+    it('calculates planned net balance as income minus outflow and savings budgets', async () => {
       vi.mocked(budgetRepository.findAllByUserIdInMonth).mockResolvedValue([
         {
           budget: { ...budget, id: 10, amount: 100, categoryId: 4 },
@@ -458,17 +486,59 @@ describe('BudgetService', () => {
         },
       ]);
       vi.mocked(transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId)
-        .mockImplementation(async (_userId, flowType) => (flowType === FlowType.INFLOW ? 15000 : 14529));
+        .mockImplementation(async (_userId, flowType) => {
+          if (flowType === FlowType.INFLOW) return 15000;
+          if (flowType === FlowType.OUTFLOW) return 14529;
+          return 0;
+        });
 
       const result: IOverallBudgetView = await budgetService.getCurrentMonthOverall(userId);
 
       expect(result.totalIncome).toBe(15000);
       expect(result.totalExpenses).toBe(14529);
+      expect(result.totalSavings).toBe(0);
       expect(result.totalAllocated).toBe(14529);
       expect(result.netBalance).toBe(471);
       expect(result.plannedIncome).toBe(100);
       expect(result.plannedAllocated).toBe(95);
+      expect(result.plannedSavings).toBe(0);
       expect(result.plannedNetBalance).toBe(5);
+    });
+
+    it('throws when creating a savings budget would make net balance negative', async () => {
+      const savingsCategory: ICategory = {
+        ...outflowCategory,
+        id: 8,
+        name: 'Emergency Fund',
+        flowType: FlowType.SAVINGS,
+      };
+      vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(savingsCategory);
+      vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(null);
+      vi.mocked(budgetRepository.findAllByUserIdInMonth).mockResolvedValue([
+        {
+          budget: { ...budget, id: 10, amount: 100, categoryId: 4 },
+          category: {
+            id: 4,
+            name: 'Salary',
+            flowType: FlowType.INFLOW,
+            order: 0,
+          },
+        },
+        {
+          budget: { ...budget, id: 1, amount: 80, categoryId: 3 },
+          category: {
+            id: outflowCategory.id,
+            name: outflowCategory.name,
+            flowType: FlowType.OUTFLOW,
+            order: 1,
+          },
+        },
+      ]);
+
+      await expect(
+        budgetService.create(userId, { ...createInput, categoryId: 8, amount: 30 }),
+      ).rejects.toEqual(new AppError(400, 'Budget allocation would result in a negative net balance'));
+      expect(budgetRepository.create).not.toHaveBeenCalled();
     });
   });
 

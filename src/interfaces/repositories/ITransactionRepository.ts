@@ -26,9 +26,23 @@ export interface ITransactionRepository {
     start: Date,
     end: Date,
   ): Promise<ICategorySpendingTotal[]>;
+  sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId(
+    userId: number,
+    flowType: FlowType,
+    start: Date,
+    end: Date,
+  ): Promise<ICategorySpendingTotal[]>;
   sumOutflowAmountByCategoryIdInDateRangeByUserId(
     userId: number,
     categoryId: number,
+    start: Date,
+    end: Date,
+    excludeTransactionId?: number,
+  ): Promise<number>;
+  sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId(
+    userId: number,
+    categoryId: number,
+    flowType: FlowType,
     start: Date,
     end: Date,
     excludeTransactionId?: number,

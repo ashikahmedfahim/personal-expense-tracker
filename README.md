@@ -116,7 +116,7 @@ flowchart TB
 | **Transaction** | `title`, `amount`, `date`, `status`, `categoryId` | Create API sets `status` to `COMPLETED` |
 | **Budget** | `amount`, `date`, `categoryId` | `date` stored as month start (UTC); outflow categories only |
 
-Enums: `FlowType` (`INFLOW`, `OUTFLOW`), `TransactionStatus` (`PENDING`, `COMPLETED`, `CANCELLED`).
+Enums: `FlowType` (`INFLOW`, `OUTFLOW`, `SAVINGS`), `TransactionStatus` (`PENDING`, `COMPLETED`, `CANCELLED`).
 
 Schema and migrations live in [`src/prisma/`](src/prisma/).
 
@@ -207,7 +207,7 @@ Authorization: Bearer <token>
 }
 ```
 
-`flowType`: `INFLOW` or `OUTFLOW`.
+`flowType`: `INFLOW`, `OUTFLOW`, or `SAVINGS`.
 
 **Update body (at least one field):**
 
@@ -250,7 +250,7 @@ Authorization: Bearer <token>
 | `description` | Optional |
 | `date` | Optional ISO date; defaults to now |
 
-**Outflow transactions** require a budget for the same category in the transaction's UTC month. Create the budget first (`POST /v1/budgets`); otherwise the API returns `400`. The transaction amount plus existing completed spending in that category for the month must not exceed the budget; otherwise the API returns `400`. Inflow transactions are not subject to this rule.
+**Outflow and savings transactions** require a budget for the same category in the transaction's UTC month. Create the budget first (`POST /v1/budgets`); otherwise the API returns `400`. The transaction amount plus existing completed spending in that category for the month must not exceed the budget; otherwise the API returns `400`. Inflow transactions are not subject to this rule.
 
 **Update body (at least one field):** `title`, `amount` (> 0), `categoryId`, `description`, `date`.
 
@@ -305,9 +305,9 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 **Rules:**
 
 - Budgets are tied to a **category** (`categoryId`).
-- **INFLOW** budgets represent planned income; **OUTFLOW** budgets represent planned expenses.
+- **INFLOW** budgets represent planned income; **OUTFLOW** budgets represent planned expenses; **SAVINGS** budgets represent planned savings.
 - **One budget per category per UTC month** (duplicate returns `409`).
-- **Net balance** (`total income budgets − total outflow budgets`) must stay **≥ 0** after create or update; otherwise the API returns `400`.
+- **Net balance rule:** `inflow = outflow + savings + net balance`. Budget create/update is rejected if planned net balance would go negative.
 - Month is derived from optional `date` (defaults to current month); stored as the first day of that month (UTC).
 
 **Create body:**
@@ -394,12 +394,14 @@ Spending includes **completed** outflow transactions in the current UTC month. B
   "data": {
     "month": "2024-06",
     "totalIncome": 15000,
-    "totalExpenses": 14529,
-    "totalAllocated": 14529,
+    "totalExpenses": 14000,
+    "totalSavings": 529,
+    "totalAllocated": 14000,
     "netBalance": 471,
     "plannedIncome": 100,
     "plannedAllocated": 95,
-    "plannedNetBalance": 5,
+    "plannedSavings": 5,
+    "plannedNetBalance": 0,
     "income": [
       {
         "category": {
@@ -439,6 +441,17 @@ Spending includes **completed** outflow transactions in the current UTC month. B
         },
         "amount": 5
       }
+    ],
+    "savings": [
+      {
+        "category": {
+          "id": 7,
+          "name": "Saving",
+          "flowType": "SAVINGS",
+          "order": 4
+        },
+        "amount": 5
+      }
     ]
   }
 }
@@ -446,12 +459,14 @@ Spending includes **completed** outflow transactions in the current UTC month. B
 
 - `totalIncome` — sum of completed **INFLOW** transactions this month
 - `totalExpenses` — sum of completed **OUTFLOW** transactions this month
+- `totalSavings` — sum of completed **SAVINGS** transactions this month
 - `totalAllocated` — same as `totalExpenses` (kept for backward compatibility)
-- `netBalance` — `totalIncome - totalExpenses`
+- `netBalance` — `totalIncome - totalExpenses - totalSavings`
 - `plannedIncome` — sum of **INFLOW** category budgets
 - `plannedAllocated` — sum of **OUTFLOW** category budgets
-- `plannedNetBalance` — `plannedIncome - plannedAllocated`
-- `income` / `allocations` — per-category **budget** amounts (planned), sorted by category `order`
+- `plannedSavings` — sum of **SAVINGS** category budgets
+- `plannedNetBalance` — `plannedIncome - plannedAllocated - plannedSavings`
+- `income` / `allocations` / `savings` — per-category **budget** amounts (planned), sorted by category `order`
 
 ### Common HTTP status codes
 

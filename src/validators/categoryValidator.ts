@@ -4,7 +4,7 @@ import type { ICategoryCreateInput, ICategoryUpdateInput } from '../interfaces/C
 import type { ICategoryValidator } from '../interfaces/validators/ICategoryValidator.js';
 import { BaseValidator } from './baseValidator.js';
 
-const flowTypeSchema = Joi.string().valid(FlowType.INFLOW, FlowType.OUTFLOW);
+const flowTypeSchema = Joi.string().valid(FlowType.INFLOW, FlowType.OUTFLOW, FlowType.SAVINGS);
 
 export class CategoryValidator extends BaseValidator implements ICategoryValidator {
   private readonly createCategorySchema = Joi.object({

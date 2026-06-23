@@ -93,7 +93,7 @@ export class TransactionService implements ITransactionService {
     }
 
     const transactionDate: Date = data.date ?? new Date();
-    await this.ensureOutflowTransactionWithinBudget(userId, category, transactionDate, data.amount);
+    await this.ensureBudgetedTransactionWithinLimit(userId, category, transactionDate, data.amount);
 
     const transaction: ITransaction = await this.transactionRepository.create(userId, data);
     return transaction;
@@ -115,10 +115,10 @@ export class TransactionService implements ITransactionService {
     const amount: number = data.amount ?? existing.amount;
 
     if (
-      category.flowType === FlowType.OUTFLOW &&
+      (category.flowType === FlowType.OUTFLOW || category.flowType === FlowType.SAVINGS) &&
       (data.amount !== undefined || data.categoryId !== undefined || data.date !== undefined)
     ) {
-      await this.ensureOutflowTransactionWithinBudget(userId, category, transactionDate, amount, existing);
+      await this.ensureBudgetedTransactionWithinLimit(userId, category, transactionDate, amount, existing);
     }
 
     const transaction: ITransaction | null = await this.transactionRepository.update(id, userId, data);
@@ -135,14 +135,14 @@ export class TransactionService implements ITransactionService {
     }
   }
 
-  private async ensureOutflowTransactionWithinBudget(
+  private async ensureBudgetedTransactionWithinLimit(
     userId: number,
     category: { id: number; flowType: FlowType },
     referenceDate: Date,
     amount: number,
     existingTransaction?: ITransaction,
   ): Promise<void> {
-    if (category.flowType !== FlowType.OUTFLOW) {
+    if (category.flowType !== FlowType.OUTFLOW && category.flowType !== FlowType.SAVINGS) {
       return;
     }
 
@@ -165,9 +165,10 @@ export class TransactionService implements ITransactionService {
         ? existingTransaction.id
         : undefined;
 
-    const currentSpent: number = await this.transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId(
+    const currentSpent: number = await this.transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId(
       userId,
       category.id,
+      category.flowType,
       start,
       end,
       excludeTransactionId,

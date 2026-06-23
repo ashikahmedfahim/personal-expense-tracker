@@ -120,12 +120,14 @@ describe('Budget routes (authenticated)', () => {
       const overall = {
         month: '2024-06',
         totalIncome: 15000,
-        totalExpenses: 14529,
-        totalAllocated: 14529,
+        totalExpenses: 14000,
+        totalSavings: 529,
+        totalAllocated: 14000,
         netBalance: 471,
         plannedIncome: 100,
         plannedAllocated: 95,
-        plannedNetBalance: 5,
+        plannedSavings: 5,
+        plannedNetBalance: 0,
         income: [
           {
             category: {
@@ -148,6 +150,7 @@ describe('Budget routes (authenticated)', () => {
             amount: 20,
           },
         ],
+        savings: [],
       };
       mockGetCurrentMonthOverall.mockResolvedValue(overall);
 

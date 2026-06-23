@@ -11,7 +11,8 @@
 
 export const FlowType = {
   INFLOW: 'INFLOW',
-  OUTFLOW: 'OUTFLOW'
+  OUTFLOW: 'OUTFLOW',
+  SAVINGS: 'SAVINGS'
 } as const
 
 export type FlowType = (typeof FlowType)[keyof typeof FlowType]

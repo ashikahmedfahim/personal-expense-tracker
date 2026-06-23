@@ -75,7 +75,9 @@ describe('TransactionService', () => {
       findRecentInDateRangeByUserId: vi.fn(),
       findOutflowAmountsInDateRangeByUserId: vi.fn(),
       sumOutflowByCategoryInDateRangeByUserId: vi.fn(),
+      sumCompletedAmountByFlowTypeGroupedByCategoryInDateRangeByUserId: vi.fn(),
       sumOutflowAmountByCategoryIdInDateRangeByUserId: vi.fn(),
+      sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId: vi.fn(),
       sumCompletedAmountByFlowTypeInDateRangeByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
       create: vi.fn(),
@@ -229,7 +231,7 @@ describe('TransactionService', () => {
       };
       vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(category);
       vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(budget);
-      vi.mocked(transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId).mockResolvedValue(460);
+      vi.mocked(transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId).mockResolvedValue(460);
 
       await expect(transactionService.create(userId, input)).rejects.toEqual(
         new AppError(400, 'Transaction would exceed the budget limit for this category in the transaction month'),
@@ -244,14 +246,15 @@ describe('TransactionService', () => {
       };
       vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(category);
       vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(budget);
-      vi.mocked(transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId).mockResolvedValue(100);
+      vi.mocked(transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId).mockResolvedValue(100);
       vi.mocked(transactionRepository.create).mockResolvedValue(transaction);
 
       const result: ITransaction = await transactionService.create(userId, input);
 
-      expect(transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId).toHaveBeenCalledWith(
+      expect(transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId).toHaveBeenCalledWith(
         userId,
         category.id,
+        FlowType.OUTFLOW,
         new Date('2024-06-01T00:00:00.000Z'),
         new Date('2024-06-30T23:59:59.999Z'),
         undefined,
@@ -319,7 +322,7 @@ describe('TransactionService', () => {
       vi.mocked(transactionRepository.findByIdAndUserId).mockResolvedValue(transaction);
       vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(category);
       vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(budget);
-      vi.mocked(transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId).mockResolvedValue(490);
+      vi.mocked(transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId).mockResolvedValue(490);
 
       await expect(
         transactionService.update(userId, transaction.id, { amount: 20 }),
@@ -334,14 +337,15 @@ describe('TransactionService', () => {
       vi.mocked(transactionRepository.findByIdAndUserId).mockResolvedValue(transaction);
       vi.mocked(categoryRepository.findByIdAndUserId).mockResolvedValue(category);
       vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(budget);
-      vi.mocked(transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId).mockResolvedValue(100);
+      vi.mocked(transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId).mockResolvedValue(100);
       vi.mocked(transactionRepository.update).mockResolvedValue(updated);
 
       const result: ITransaction = await transactionService.update(userId, transaction.id, updateInput);
 
-      expect(transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId).toHaveBeenCalledWith(
+      expect(transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId).toHaveBeenCalledWith(
         userId,
         category.id,
+        FlowType.OUTFLOW,
         new Date('2024-06-01T00:00:00.000Z'),
         new Date('2024-06-30T23:59:59.999Z'),
         transaction.id,
@@ -358,7 +362,7 @@ describe('TransactionService', () => {
         id: 5,
       });
       vi.mocked(budgetRepository.findByCategoryIdAndUserIdInMonth).mockResolvedValue(budget);
-      vi.mocked(transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId).mockResolvedValue(0);
+      vi.mocked(transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId).mockResolvedValue(0);
       vi.mocked(transactionRepository.update).mockResolvedValue(updated);
 
       const result: ITransaction = await transactionService.update(userId, transaction.id, { categoryId: 5 });
@@ -370,9 +374,10 @@ describe('TransactionService', () => {
         new Date('2024-06-01T00:00:00.000Z'),
         new Date('2024-06-30T23:59:59.999Z'),
       );
-      expect(transactionRepository.sumOutflowAmountByCategoryIdInDateRangeByUserId).toHaveBeenCalledWith(
+      expect(transactionRepository.sumCompletedAmountByCategoryIdAndFlowTypeInDateRangeByUserId).toHaveBeenCalledWith(
         userId,
         5,
+        FlowType.OUTFLOW,
         new Date('2024-06-01T00:00:00.000Z'),
         new Date('2024-06-30T23:59:59.999Z'),
         undefined,
