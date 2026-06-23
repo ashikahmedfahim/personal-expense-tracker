@@ -119,9 +119,13 @@ describe('BudgetController', () => {
   it('returns current month overall budget allocation', async () => {
     const overall: IOverallBudgetView = {
       month: '2024-06',
-      totalIncome: 100,
-      totalAllocated: 95,
-      netBalance: 5,
+      totalIncome: 15000,
+      totalExpenses: 14529,
+      totalAllocated: 14529,
+      netBalance: 471,
+      plannedIncome: 100,
+      plannedAllocated: 95,
+      plannedNetBalance: 5,
       income: [
         {
           category: {

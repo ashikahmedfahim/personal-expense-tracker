@@ -59,8 +59,12 @@ export interface IOverallBudgetAllocation {
 export interface IOverallBudgetView {
   month: string;
   totalIncome: number;
+  totalExpenses: number;
   totalAllocated: number;
   netBalance: number;
+  plannedIncome: number;
+  plannedAllocated: number;
+  plannedNetBalance: number;
   income: IOverallBudgetAllocation[];
   allocations: IOverallBudgetAllocation[];
 }

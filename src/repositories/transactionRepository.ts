@@ -151,6 +151,32 @@ export class TransactionRepository implements ITransactionRepository {
     return result._sum.amount ?? 0;
   }
 
+  async sumCompletedAmountByFlowTypeInDateRangeByUserId(
+    userId: number,
+    flowType: FlowType,
+    start: Date,
+    end: Date,
+  ): Promise<number> {
+    const result = await this.db.transaction.aggregate({
+      where: {
+        userId,
+        status: TransactionStatus.COMPLETED,
+        date: {
+          gte: start,
+          lte: end,
+        },
+        category: {
+          flowType,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    return result._sum.amount ?? 0;
+  }
+
   async findByIdAndUserId(id: number, userId: number): Promise<ITransaction | null> {
     const response: ITransaction | null = await this.db.transaction.findFirst({
       where: { id, userId },

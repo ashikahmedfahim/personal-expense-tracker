@@ -116,12 +116,16 @@ describe('Budget routes (authenticated)', () => {
   });
 
   describe('GET /v1/budgets/current-month/overall', () => {
-    it('returns 200 with current month budget allocation using budget amounts only', async () => {
+    it('returns 200 with current month actual totals and planned budget allocations', async () => {
       const overall = {
         month: '2024-06',
-        totalIncome: 100,
-        totalAllocated: 95,
-        netBalance: 5,
+        totalIncome: 15000,
+        totalExpenses: 14529,
+        totalAllocated: 14529,
+        netBalance: 471,
+        plannedIncome: 100,
+        plannedAllocated: 95,
+        plannedNetBalance: 5,
         income: [
           {
             category: {

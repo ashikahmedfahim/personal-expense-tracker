@@ -6,6 +6,7 @@ import type {
   ITransactionUpdateInput,
   ITransactionWithCategory,
 } from '../Transaction.js';
+import type { FlowType } from '../../generated/prisma/enums.js';
 
 export interface ITransactionRepository {
   findRecentByUserId(userId: number, limit: number): Promise<ITransaction[]>;
@@ -31,6 +32,12 @@ export interface ITransactionRepository {
     start: Date,
     end: Date,
     excludeTransactionId?: number,
+  ): Promise<number>;
+  sumCompletedAmountByFlowTypeInDateRangeByUserId(
+    userId: number,
+    flowType: FlowType,
+    start: Date,
+    end: Date,
   ): Promise<number>;
   findByIdAndUserId(id: number, userId: number): Promise<ITransaction | null>;
   create(userId: number, data: ITransactionCreateInput): Promise<ITransaction>;

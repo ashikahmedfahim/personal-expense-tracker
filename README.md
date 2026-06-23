@@ -297,7 +297,7 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/v1/budgets/current-month` | All budgets for the current UTC month with per-category spending |
-| `GET` | `/v1/budgets/current-month/overall` | Overall budget plan for the current UTC month (budget amounts only) |
+| `GET` | `/v1/budgets/current-month/overall` | Overall budget view: actual transaction totals plus planned budget allocations |
 | `POST` | `/v1/budgets` | Create monthly budget for a category |
 | `PATCH` | `/v1/budgets/:id` | Update budget amount only |
 | `DELETE` | `/v1/budgets/:id` | Delete budget |
@@ -386,16 +386,20 @@ Only **completed** transactions on **OUTFLOW** categories are included. Dates ar
 
 Spending includes **completed** outflow transactions in the current UTC month. Budgets are sorted by category `order`. `remaining` can be negative if spending exceeds the budget.
 
-**Overall budget response shape** — planned income and expense allocation for the current UTC month (uses budget amounts, not spending):
+**Overall budget response shape** — actual income/expenses from completed transactions, plus planned budget allocations:
 
 ```json
 {
   "message": null,
   "data": {
     "month": "2024-06",
-    "totalIncome": 100,
-    "totalAllocated": 95,
-    "netBalance": 5,
+    "totalIncome": 15000,
+    "totalExpenses": 14529,
+    "totalAllocated": 14529,
+    "netBalance": 471,
+    "plannedIncome": 100,
+    "plannedAllocated": 95,
+    "plannedNetBalance": 5,
     "income": [
       {
         "category": {
@@ -440,10 +444,14 @@ Spending includes **completed** outflow transactions in the current UTC month. B
 }
 ```
 
-- `totalIncome` — sum of **INFLOW** category budgets
-- `totalAllocated` — sum of **OUTFLOW** category budgets
-- `netBalance` — `totalIncome - totalAllocated`
-- `allocations` — expense category budgets sorted by category `order`
+- `totalIncome` — sum of completed **INFLOW** transactions this month
+- `totalExpenses` — sum of completed **OUTFLOW** transactions this month
+- `totalAllocated` — same as `totalExpenses` (kept for backward compatibility)
+- `netBalance` — `totalIncome - totalExpenses`
+- `plannedIncome` — sum of **INFLOW** category budgets
+- `plannedAllocated` — sum of **OUTFLOW** category budgets
+- `plannedNetBalance` — `plannedIncome - plannedAllocated`
+- `income` / `allocations` — per-category **budget** amounts (planned), sorted by category `order`
 
 ### Common HTTP status codes
 

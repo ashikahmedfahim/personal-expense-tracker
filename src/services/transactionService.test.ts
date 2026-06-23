@@ -76,6 +76,7 @@ describe('TransactionService', () => {
       findOutflowAmountsInDateRangeByUserId: vi.fn(),
       sumOutflowByCategoryInDateRangeByUserId: vi.fn(),
       sumOutflowAmountByCategoryIdInDateRangeByUserId: vi.fn(),
+      sumCompletedAmountByFlowTypeInDateRangeByUserId: vi.fn(),
       findByIdAndUserId: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),

@@ -95,7 +95,21 @@ export class BudgetService implements IBudgetService {
   async getCurrentMonthOverall(userId: number): Promise<IOverallBudgetView> {
     const referenceDate: Date = new Date();
     const { start, end }: { start: Date; end: Date } = getCurrentMonthUtcRange(referenceDate);
-    const budgetsWithCategories = await this.budgetRepository.findAllByUserIdInMonth(userId, start, end);
+    const [budgetsWithCategories, actualIncome, actualExpenses] = await Promise.all([
+      this.budgetRepository.findAllByUserIdInMonth(userId, start, end),
+      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+        userId,
+        FlowType.INFLOW,
+        start,
+        end,
+      ),
+      this.transactionRepository.sumCompletedAmountByFlowTypeInDateRangeByUserId(
+        userId,
+        FlowType.OUTFLOW,
+        start,
+        end,
+      ),
+    ]);
 
     const income: IOverallBudgetAllocation[] = [];
     const allocations: IOverallBudgetAllocation[] = [];
@@ -114,14 +128,18 @@ export class BudgetService implements IBudgetService {
       allocations.push(item);
     }
 
-    const totalIncome: number = income.reduce((sum, item) => sum + item.amount, 0);
-    const totalAllocated: number = allocations.reduce((sum, item) => sum + item.amount, 0);
+    const plannedIncome: number = income.reduce((sum, item) => sum + item.amount, 0);
+    const plannedAllocated: number = allocations.reduce((sum, item) => sum + item.amount, 0);
 
     return {
       month: formatUtcMonthKey(referenceDate),
-      totalIncome,
-      totalAllocated,
-      netBalance: totalIncome - totalAllocated,
+      totalIncome: actualIncome,
+      totalExpenses: actualExpenses,
+      totalAllocated: actualExpenses,
+      netBalance: actualIncome - actualExpenses,
+      plannedIncome,
+      plannedAllocated,
+      plannedNetBalance: plannedIncome - plannedAllocated,
       income,
       allocations,
     };
